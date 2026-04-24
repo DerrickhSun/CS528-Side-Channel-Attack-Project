@@ -1,0 +1,131 @@
+<svg viewBox="0 0 820 580" xmlns="http://www.w3.org/2000/svg" role="img" font-family="monospace, sans-serif">
+  <title>SNI Traffic Analysis Attack — Architecture Flow</title>
+  <desc>Three-machine architecture showing Dev Machine, Victim VM, and Attacker VM with data flows for Parts 1, 2, and 3 of the SNI attack project.</desc>
+
+  <rect width="820" height="580" fill="#0f1117" rx="12"/>
+
+  <text x="148" y="28" fill="#6b7280" font-size="11" text-anchor="middle" font-weight="600" letter-spacing="1">PART 0 — SETUP</text>
+  <text x="410" y="28" fill="#6b7280" font-size="11" text-anchor="middle" font-weight="600" letter-spacing="1">PART 1 — CAPTURE</text>
+  <text x="672" y="28" fill="#6b7280" font-size="11" text-anchor="middle" font-weight="600" letter-spacing="1">PART 2 — PREDICT</text>
+
+  <line x1="272" y1="40" x2="272" y2="550" stroke="#1f2937" stroke-width="1" stroke-dasharray="4,4"/>
+  <line x1="548" y1="40" x2="548" y2="550" stroke="#1f2937" stroke-width="1" stroke-dasharray="4,4"/>
+
+  <rect x="30" y="48" width="236" height="52" rx="8" fill="#1e293b" stroke="#334155" stroke-width="1.5"/>
+  <text x="148" y="68" fill="#94a3b8" font-size="10" text-anchor="middle" font-weight="700" letter-spacing="0.5">DEV MACHINE</text>
+  <text x="148" y="86" fill="#64748b" font-size="9.5" text-anchor="middle">generate.py · train.py</text>
+
+  <rect x="40" y="122" width="104" height="44" rx="6" fill="#0f2d1a" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="92" y="140" fill="#4ade80" font-size="10" text-anchor="middle" font-weight="600">generate.py</text>
+  <text x="92" y="156" fill="#4ade80" font-size="9" text-anchor="middle" opacity="0.7">sessions.csv · demo.csv</text>
+
+  <rect x="152" y="122" width="104" height="44" rx="6" fill="#0f2d1a" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="204" y="140" fill="#4ade80" font-size="10" text-anchor="middle" font-weight="600">train.py</text>
+  <text x="204" y="156" fill="#4ade80" font-size="9" text-anchor="middle" opacity="0.7">markov.pkl · classifier.pkl</text>
+
+  <line x1="144" y1="144" x2="152" y2="144" stroke="#16a34a" stroke-width="1.5" marker-end="url(#arrowGreen)"/>
+
+  <rect x="96" y="192" width="104" height="36" rx="6" fill="#111827" stroke="#374151" stroke-width="1.5"/>
+  <text x="148" y="210" fill="#9ca3af" font-size="10" text-anchor="middle">models/</text>
+  <text x="148" y="224" fill="#6b7280" font-size="9" text-anchor="middle">*.pkl files</text>
+
+  <line x1="204" y1="166" x2="204" y2="184" stroke="#16a34a" stroke-width="1.2" stroke-dasharray="3,2"/>
+  <line x1="204" y1="184" x2="160" y2="192" stroke="#16a34a" stroke-width="1.2" marker-end="url(#arrowGreen)" stroke-dasharray="3,2"/>
+  <line x1="92" y1="166" x2="92" y2="184" stroke="#16a34a" stroke-width="1.2" stroke-dasharray="3,2"/>
+  <line x1="92" y1="184" x2="136" y2="192" stroke="#16a34a" stroke-width="1.2" marker-end="url(#arrowGreen)" stroke-dasharray="3,2"/>
+
+  <rect x="40" y="254" width="216" height="30" rx="5" fill="#1c1917" stroke="#57534e" stroke-width="1"/>
+  <text x="148" y="273" fill="#78716c" font-size="9.5" text-anchor="middle">copy models + sessions.csv to VMs</text>
+
+  <rect x="288" y="48" width="236" height="52" rx="8" fill="#1e293b" stroke="#334155" stroke-width="1.5"/>
+  <text x="406" y="68" fill="#94a3b8" font-size="10" text-anchor="middle" font-weight="700" letter-spacing="0.5">VICTIM VM</text>
+  <text x="406" y="86" fill="#64748b" font-size="9.5" text-anchor="middle">victim.sh</text>
+
+  <rect x="298" y="122" width="216" height="44" rx="6" fill="#1c1007" stroke="#ca8a04" stroke-width="1.5"/>
+  <text x="406" y="140" fill="#facc15" font-size="10" text-anchor="middle" font-weight="600">victim.sh</text>
+  <text x="406" y="156" fill="#facc15" font-size="9" text-anchor="middle" opacity="0.7">curl SNI hosts from sessions.csv / demo.csv</text>
+
+  <rect x="318" y="196" width="176" height="44" rx="6" fill="#1a0a1a" stroke="#7c3aed" stroke-width="1.5"/>
+  <text x="406" y="214" fill="#c084fc" font-size="10" text-anchor="middle" font-weight="600">TLS Client Hello</text>
+  <text x="406" y="228" fill="#c084fc" font-size="9" text-anchor="middle" opacity="0.7">SNI in plaintext → network</text>
+
+  <line x1="406" y1="166" x2="406" y2="196" stroke="#ca8a04" stroke-width="1.5" marker-end="url(#arrowYellow)"/>
+  <line x1="256" y1="270" x2="310" y2="140" stroke="#57534e" stroke-width="1" stroke-dasharray="3,3" marker-end="url(#arrowGray)"/>
+
+  <rect x="554" y="48" width="236" height="52" rx="8" fill="#1e293b" stroke="#334155" stroke-width="1.5"/>
+  <text x="672" y="68" fill="#94a3b8" font-size="10" text-anchor="middle" font-weight="700" letter-spacing="0.5">ATTACKER VM</text>
+  <text x="672" y="86" fill="#64748b" font-size="9.5" text-anchor="middle">capture.sh · attack.py</text>
+
+  <rect x="564" y="122" width="216" height="44" rx="6" fill="#1a0a0a" stroke="#dc2626" stroke-width="1.5"/>
+  <text x="672" y="140" fill="#f87171" font-size="10" text-anchor="middle" font-weight="600">capture.sh (tshark)</text>
+  <text x="672" y="156" fill="#f87171" font-size="9" text-anchor="middle" opacity="0.7">sniff TLS Client Hello from victim IP</text>
+
+  <rect x="604" y="192" width="136" height="36" rx="6" fill="#111827" stroke="#374151" stroke-width="1.5"/>
+  <text x="672" y="210" fill="#9ca3af" font-size="10" text-anchor="middle">captured_sni.csv</text>
+  <text x="672" y="224" fill="#6b7280" font-size="9" text-anchor="middle">sni · timestamp</text>
+
+  <line x1="672" y1="166" x2="672" y2="192" stroke="#dc2626" stroke-width="1.5" marker-end="url(#arrowRed)"/>
+
+  <rect x="564" y="252" width="216" height="54" rx="6" fill="#1a0a0a" stroke="#dc2626" stroke-width="1.5"/>
+  <text x="672" y="272" fill="#f87171" font-size="10" text-anchor="middle" font-weight="600">attack.py</text>
+  <text x="672" y="287" fill="#f87171" font-size="9" text-anchor="middle" opacity="0.7">classify persona · predict next SNI</text>
+  <text x="672" y="300" fill="#f87171" font-size="9" text-anchor="middle" opacity="0.5">uses classifier.pkl + markov.pkl</text>
+
+  <line x1="672" y1="228" x2="672" y2="252" stroke="#dc2626" stroke-width="1.5" marker-end="url(#arrowRed)"/>
+
+  <line x1="494" y1="218" x2="564" y2="145" stroke="#7c3aed" stroke-width="2" stroke-dasharray="5,3" marker-end="url(#arrowPurple)"/>
+  <rect x="497" y="174" width="62" height="16" rx="3" fill="#0f1117"/>
+  <text x="528" y="186" fill="#7c3aed" font-size="9" text-anchor="middle" font-weight="600">passive sniff</text>
+
+  <rect x="554" y="330" width="236" height="80" rx="6" fill="#0d0d0d" stroke="#374151" stroke-width="1.5"/>
+  <text x="564" y="350" fill="#6b7280" font-size="9" font-family="monospace">[SESSION 7]</text>
+  <text x="564" y="364" fill="#6b7280" font-size="9" font-family="monospace">  Persona:  Shopper (91%)</text>
+  <text x="564" y="378" fill="#6b7280" font-size="9" font-family="monospace">  Predicts: paypal.com (58%)</text>
+  <text x="564" y="392" fill="#ef4444" font-size="9" font-family="monospace">  → Serve fake paypal login</text>
+  <text x="564" y="406" fill="#6b7280" font-size="9" font-family="monospace">           before victim arrives</text>
+
+  <line x1="672" y1="306" x2="672" y2="330" stroke="#dc2626" stroke-width="1.5" marker-end="url(#arrowRed)"/>
+
+  <rect x="288" y="330" width="236" height="60" rx="6" fill="#071a1a" stroke="#0d9488" stroke-width="1.5"/>
+  <text x="406" y="352" fill="#2dd4bf" font-size="10" text-anchor="middle" font-weight="600">PART 3 — ECH / ESNI Mitigation</text>
+  <text x="406" y="368" fill="#2dd4bf" font-size="9" text-anchor="middle" opacity="0.8">Enable ECH on Victim VM</text>
+  <text x="406" y="382" fill="#2dd4bf" font-size="9" text-anchor="middle" opacity="0.6">tshark goes blind → attack collapses</text>
+
+  <line x1="494" y1="360" x2="564" y2="155" stroke="#0d9488" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrowTeal)"/>
+  <rect x="500" y="240" width="58" height="16" rx="3" fill="#0f1117"/>
+  <text x="529" y="252" fill="#0d9488" font-size="9" text-anchor="middle">ECH blocks</text>
+
+  <rect x="30" y="430" width="216" height="130" rx="6" fill="#111827" stroke="#1f2937" stroke-width="1"/>
+  <text x="138" y="450" fill="#6b7280" font-size="10" text-anchor="middle" font-weight="700" letter-spacing="0.5">LEGEND</text>
+  <rect x="46" y="460" width="10" height="10" rx="2" fill="#16a34a"/>
+  <text x="62" y="470" fill="#9ca3af" font-size="9">Dev Machine scripts &amp; data</text>
+  <rect x="46" y="478" width="10" height="10" rx="2" fill="#ca8a04"/>
+  <text x="62" y="488" fill="#9ca3af" font-size="9">Victim VM browsing</text>
+  <rect x="46" y="496" width="10" height="10" rx="2" fill="#dc2626"/>
+  <text x="62" y="506" fill="#9ca3af" font-size="9">Attacker VM capture &amp; predict</text>
+  <rect x="46" y="514" width="10" height="10" rx="2" fill="#7c3aed"/>
+  <text x="62" y="524" fill="#9ca3af" font-size="9">Passive network sniff</text>
+  <rect x="46" y="532" width="10" height="10" rx="2" fill="#0d9488"/>
+  <text x="62" y="542" fill="#9ca3af" font-size="9">ECH mitigation (Part 3)</text>
+
+  <defs>
+    <marker id="arrowGreen" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#16a34a"/>
+    </marker>
+    <marker id="arrowYellow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#ca8a04"/>
+    </marker>
+    <marker id="arrowRed" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#dc2626"/>
+    </marker>
+    <marker id="arrowPurple" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#7c3aed"/>
+    </marker>
+    <marker id="arrowTeal" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#0d9488"/>
+    </marker>
+    <marker id="arrowGray" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#57534e"/>
+    </marker>
+  </defs>
+</svg>

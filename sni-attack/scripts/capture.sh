@@ -1,3 +1,61 @@
 #!/bin/bash
-# Runs on the attacker VM: uses tshark to sniff TLS Client Hello packets from the victim IP
-# and writes captured SNI hostnames and timestamps to data/captured_sni.csv
+#
+# capture.sh — passive SNI capture on the attacker VM
+#
+# Captures TLS traffic with tcpdump, then parses SNIs out of the pcap using parse_sni.py
+#
+# Output:
+#   data/capture.pcap        — raw packet dump (kept for debugging)
+#   data/captured_sni.csv    — parsed timestamp,sni rows
+#
+# Stop: Ctrl-C (the parser runs automatically on exit)
+
+# --- Config -----------------------------------------------------------
+
+INTERFACE="eth14"
+BPF="tcp port 443"
+DATA_DIR="data"
+PCAP_FILE="$DATA_DIR/capture.pcap"
+CSV_FILE="$DATA_DIR/captured_sni.csv"
+PARSER="$(dirname "$0")/parse_sni.py"
+
+# --- Pre-flight -------------------------------------------------------
+
+if ! command -v tcpdump >/dev/null 2>&1; then
+    echo "ERROR: tcpdump not installed." >&2
+    exit 1
+fi
+
+if [[ ! -f "$PARSER" ]]; then
+    echo "ERROR: parse_sni.py not found at $PARSER" >&2
+    exit 1
+fi
+
+mkdir -p "$DATA_DIR"
+
+echo "[capture.sh] Interface: $INTERFACE"
+echo "[capture.sh] Pcap:      $PCAP_FILE"
+echo "[capture.sh] CSV:       $CSV_FILE"
+echo "[capture.sh] Press Ctrl-C to stop and parse."
+echo ""
+
+# --- Capture ----------------------------------------------------------
+
+# tcpdump flags:
+#   -i  interface
+#   -w  write raw packets to pcap (no parsing — fastest, lossless)
+#   -n  no DNS resolution
+#   -s 0  capture full packets (default snaplen on old tcpdump is 68 bytes,
+#         which truncates ClientHellos — must override)
+#
+# Trap EXIT so the parser runs automatically when tcpdump stops.
+on_exit() {
+    echo ""
+    echo "[capture.sh] Capture stopped. Parsing SNIs..."
+    python "$PARSER" "$PCAP_FILE" "$CSV_FILE"
+    rows=$(($(wc -l < "$CSV_FILE") - 1))
+    echo "[capture.sh] Done. Wrote $rows SNI rows to $CSV_FILE"
+}
+trap on_exit EXIT
+
+tcpdump -i "$INTERFACE" -n -s 0 -w "$PCAP_FILE" "$BPF"

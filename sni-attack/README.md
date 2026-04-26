@@ -7,13 +7,13 @@ This project demonstrates a privacy attack against TLS Server Name Indication (S
 The project is structured in three parts:
 
 ### Part 1 — The Obvious Leak
-Capture live TLS traffic between two VMs and show that SNI reveals the destination hostname in plaintext. No decryption required. A passive attacker running tshark can trivially read every site a user visits in real time.
+Capture live TLS traffic between two VMs and show that SNI reveals the destination hostname in plaintext. No decryption required. A passive attacker running tcpdump can trivially read every site a user visits in real time.
 
 ### Part 2 — The Deeper Leak
 Train a Markov-based probability model on SNI sequences to learn user behavioral patterns. The model classifies which type of user is browsing (Student, Shopper, or News Reader) based on early SNI observations, then predicts where they will go next — before they get there. This enables a pre-emptive phishing attack: the attacker prepares a fake login page for the predicted destination before the victim even types the URL.
 
 ### Part 3 — Mitigation: ESNI and ECH
-Discuss Encrypted Client Hello (ECH) and its predecessor ESNI as the community's response to SNI leakage. Covers what ECH is, how it works, references to research on its effectiveness, and the current deployment landscape. The live demo shows that enabling ECH on the victim VM causes tshark to go blind — the attack from Parts 1 and 2 collapses completely.
+Discuss Encrypted Client Hello (ECH) and its predecessor ESNI as the community's response to SNI leakage. Covers what ECH is, how it works, references to research on its effectiveness, and the current deployment landscape. The live demo shows that enabling ECH on the victim VM causes the capture to go blind — the attack from Parts 1 and 2 collapses completely.
 
 ---
 
@@ -24,7 +24,8 @@ sni-attack/
 ├── data/
 │   ├── sessions.csv          # 150 labeled training sessions (generated)
 │   ├── demo.csv              # 15 fresh sessions for live demo (generated)
-│   └── captured_sni.csv      # Raw SNI stream captured by tshark (Run 1)
+│   ├── capture.pcap          # Raw packet dump from tcpdump (kept for debugging)
+│   └── captured_sni.csv      # Parsed SNI hostnames + timestamps [attacker VM]
 ├── models/
 │   ├── markov.pkl            # Markov transition tables per persona
 │   └── classifier.pkl        # Persona classifier
@@ -32,7 +33,8 @@ sni-attack/
 │   ├── generate.py           # Build sessions.csv + demo.csv [dev machine]
 │   ├── train.py              # Train + evaluate models [dev machine]
 │   ├── victim.sh             # curl sessions from CSV [victim VM]
-│   ├── capture.sh            # tshark → captured_sni.csv [attacker VM]
+│   ├── capture.sh            # tcpdump → capture.pcap, then calls parse_sni.py [attacker VM]
+│   ├── parse_sni.py          # Pure Python 2.7 pcap parser — extracts SNI from TLS ClientHellos [attacker VM]
 │   └── attack.py             # Live classify + predict [attacker VM]
 ├── README.md
 └── requirements.txt
@@ -45,10 +47,12 @@ sni-attack/
 | Machine | Role | Scripts |
 |---|---|---|
 | Victim VM | Browses sites via curl following sessions.csv or demo.csv | `victim.sh` |
-| Attacker VM | Sniffs traffic with tshark, runs live prediction | `capture.sh`, `attack.py` |
+| Attacker VM | Sniffs traffic with tcpdump, parses SNI, runs live prediction | `capture.sh`, `parse_sni.py`, `attack.py` |
 | Dev Machine | Generates data, trains models before the demo | `generate.py`, `train.py` |
 
 Both VMs must be on the same network segment so the attacker can observe the victim's TLS handshakes.
+
+> **Note on tooling:** The lab VMs run Ubuntu 12.04 / tshark 1.6.7 (2012), which predates TLS SNI dissection support. The capture pipeline was redesigned to use `tcpdump -w` for raw packet collection and `parse_sni.py` — a pure Python 2.7 stdlib parser — to extract SNI fields directly from the pcap binary.
 
 ---
 
@@ -166,14 +170,23 @@ python scripts/train.py
 ### Part 1 — Live SNI capture (both VMs)
 
 ```bash
-# Attacker VM — start capture first
-bash scripts/capture.sh <victim_ip>
+# Attacker VM — start capture first (requires sudo)
+sudo bash scripts/capture.sh
 
-# Victim VM — browse through all training sessions
+# Victim VM — browse through sessions to generate TLS traffic
 bash scripts/victim.sh data/sessions.csv
 ```
 
-This produces `data/captured_sni.csv` and simultaneously demonstrates the plaintext SNI leak in tshark output.
+Press Ctrl-C on the attacker when done. `capture.sh` automatically calls `parse_sni.py` on exit and writes `data/captured_sni.csv`. Open it to show the plaintext SNI leak — every hostname the victim visited, no decryption required.
+
+To manually test the victim side without a full session CSV, you can run curl directly:
+
+```bash
+for host in github.com google.com purdue.edu; do
+    curl -sI https://$host > /dev/null
+    sleep 2
+done
+```
 
 ### Part 2 — Live prediction demo (both VMs)
 
@@ -189,7 +202,7 @@ The attacker terminal prints persona classification and next-site predictions in
 
 ### Part 3 — ECH mitigation demo
 
-Enable ECH on the victim VM, re-run a few demo sessions, and show that tshark captures no readable SNI fields.
+Enable ECH on the victim VM, re-run a few demo sessions, and show that `captured_sni.csv` comes back empty — tcpdump captures packets but `parse_sni.py` finds no readable SNI fields.
 
 ---
 
@@ -228,7 +241,8 @@ See `requirements.txt`. Key packages:
 - `pandas` — session data handling
 - `scikit-learn` — classifier
 - `numpy` — transition matrix math
-- `pyshark` — tshark integration for `attack.py`
+
+`parse_sni.py` uses only the Python 2.7 standard library — no external packages required for packet capture and parsing.
 
 ---
 

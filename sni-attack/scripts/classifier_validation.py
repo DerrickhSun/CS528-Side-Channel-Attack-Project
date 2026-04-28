@@ -1,8 +1,12 @@
 """
-5-fold cross-validation for session-level persona classifiers.
-Splits by session_id so all hops from a session stay in train or test together.
-Writes two CSVs under data/: <model>_validation_results.csv (per-hop predictions)
-and <model>_validation_summary.csv (per-fold and pooled metrics).
+K-fold validation for models trained on sessions.csv (session-level splits).
+
+* **Classifiers** (e.g. popular): session-level persona accuracy; per-hop rows
+  repeat the session prediction.
+* **Next-site predictors** (Markov, most_common_predictor, …): transition-level
+  top-1 next-SNI accuracy; one row per hop edge in the test split.
+
+Output: data/<model>_validation_results.csv and data/<model>_validation_summary.csv
 """
 
 from __future__ import annotations
@@ -12,7 +16,7 @@ import csv
 import sys
 from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Protocol
+from typing import Any, Literal, Protocol
 
 from sklearn.model_selection import KFold
 
@@ -22,16 +26,41 @@ for p in (ROOT, SCRIPTS):
     if str(p) not in sys.path:
         sys.path.insert(0, str(p))
 
+from models.first_order_markov import FirstOrderMarkov
 from models.popular_classifier import PopularClassifier
+from models.most_common_predictor import MostCommonPredictor
 
 from input_processing import group_rows_by_session, load_session_rows
 
 DATA_DIR = ROOT / "data"
 
+# Extend when adding models: persona classifiers vs next-hop / sequence models.
+CLASSIFIER_MODELS: frozenset[str] = frozenset({"popular"})
+NEXT_SITE_MODELS: frozenset[str] = frozenset(
+    {"markov", "first_order_markov", "most_common_predictor"}
+)
+
+ModelKind = Literal["classifier", "next_site"]
+
+
+def model_kind(name: str) -> ModelKind:
+    if name in CLASSIFIER_MODELS:
+        return "classifier"
+    if name in NEXT_SITE_MODELS:
+        return "next_site"
+    raise KeyError(name)
+
 
 class SessionClassifier(Protocol):
     def fit(self, rows: list[dict[str, Any]]) -> Any: ...
     def predict(self, rows: list[dict[str, Any]]) -> str | None: ...
+
+
+def _sessions_list_from_csv(sessions_path: Path) -> list[list[dict[str, Any]]]:
+    rows = load_session_rows(sessions_path)
+    grouped = group_rows_by_session(rows)
+    sids = sorted(grouped.keys())
+    return [grouped[sid] for sid in sids]
 
 
 def session_level_test_accuracy(
@@ -40,7 +69,6 @@ def session_level_test_accuracy(
 ) -> tuple[int, int, int]:
     """
     Returns (correct, total_with_prediction, skipped_no_prediction).
-    Same counting rule as train.py: sessions where predict returns None are skipped.
     """
     correct = 0
     total = 0
@@ -62,10 +90,7 @@ def cv_popular(
     n_splits: int = 5,
     random_state: int = 42,
 ) -> dict[str, Any]:
-    rows = load_session_rows(sessions_path)
-    grouped = group_rows_by_session(rows)
-    sids = sorted(grouped.keys())
-    sessions_list = [grouped[sid] for sid in sids]
+    sessions_list = _sessions_list_from_csv(sessions_path)
     n_sessions = len(sessions_list)
     if n_sessions < n_splits:
         raise SystemExit(
@@ -140,11 +165,158 @@ def cv_popular(
     }
 
 
+def _top3_prediction_fields(
+    ranked: list[tuple[str, float]],
+) -> dict[str, Any]:
+    """Six CSV columns: pred_rank{1,2,3}_{sni,prob}; empty strings if fewer than 3."""
+    fields: dict[str, Any] = {}
+    for k in range(1, 4):
+        fields[f"pred_rank{k}_sni"] = ""
+        fields[f"pred_rank{k}_prob"] = ""
+    for k, (sni, p) in enumerate(ranked[:3], start=1):
+        fields[f"pred_rank{k}_sni"] = sni
+        fields[f"pred_rank{k}_prob"] = round(float(p), 6)
+    return fields
+
+
+def _cv_next_site_model(
+    sessions_path: Path,
+    n_splits: int,
+    random_state: int,
+    model_cls: type,
+) -> dict[str, Any]:
+    """Shared K-fold CV for models with ``fit(rows)``, ``next_probabilities(s)``."""
+    sessions_list = _sessions_list_from_csv(sessions_path)
+    n_sessions = len(sessions_list)
+    if n_sessions < n_splits:
+        raise SystemExit(
+            f"Need at least {n_splits} sessions for {n_splits}-fold CV; got {n_sessions}."
+        )
+
+    kf = KFold(n_splits=n_splits, shuffle=True, random_state=random_state)
+    pooled_correct = 0
+    pooled_total = 0
+    pooled_skipped = 0
+    fold_reports: list[dict[str, Any]] = []
+
+    for fold_idx, (train_idx, test_idx) in enumerate(
+        kf.split(range(n_sessions)),
+        start=1,
+    ):
+        train_rows: list[dict[str, Any]] = []
+        for i in train_idx:
+            train_rows.extend(sessions_list[i])
+        test_sessions = [sessions_list[i] for i in test_idx]
+
+        m = model_cls().fit(train_rows)
+        correct = 0
+        total = 0
+        skipped = 0
+        edge_predictions: list[dict[str, Any]] = []
+
+        for session_rows in test_sessions:
+            for i in range(len(session_rows) - 1):
+                r_from, r_to = session_rows[i], session_rows[i + 1]
+                from_sni = str(r_from["sni"]).strip()
+                actual_next = str(r_to["sni"]).strip()
+                from_hop = int(r_from["hop"])
+                to_hop = int(r_to["hop"])
+                sid = int(r_from["session_id"])
+                dist = m.next_probabilities(from_sni)
+                if not dist:
+                    skipped += 1
+                    edge_predictions.append(
+                        {
+                            "session_id": sid,
+                            "from_hop": from_hop,
+                            "to_hop": to_hop,
+                            "from_sni": from_sni,
+                            "actual_next_sni": actual_next,
+                            **_top3_prediction_fields([]),
+                            "prob_actual_next": "",
+                            "top1_correct": False,
+                            "evaluated": False,
+                        }
+                    )
+                    continue
+                total += 1
+                ranked = m.next_probabilities_list(from_sni)
+                top1 = ranked[0][0] if ranked else ""
+                top1_ok = top1 == actual_next
+                if top1_ok:
+                    correct += 1
+                prob_actual = float(dist.get(actual_next, 0.0))
+                edge_predictions.append(
+                    {
+                        "session_id": sid,
+                        "from_hop": from_hop,
+                        "to_hop": to_hop,
+                        "from_sni": from_sni,
+                        "actual_next_sni": actual_next,
+                        **_top3_prediction_fields(ranked),
+                        "prob_actual_next": round(prob_actual, 6),
+                        "top1_correct": top1_ok,
+                        "evaluated": True,
+                    }
+                )
+
+        acc = correct / total if total else 0.0
+        pooled_correct += correct
+        pooled_total += total
+        pooled_skipped += skipped
+
+        fold_reports.append(
+            {
+                "fold": fold_idx,
+                "transition_accuracy": {
+                    "correct": correct,
+                    "total_evaluated": total,
+                    "skipped_unknown_state": skipped,
+                    "accuracy": acc,
+                },
+                "edge_predictions": edge_predictions,
+            }
+        )
+
+    micro = pooled_correct / pooled_total if pooled_total else 0.0
+    return {
+        "csv": str(sessions_path.resolve()),
+        "n_splits": n_splits,
+        "random_state": random_state,
+        "folds": fold_reports,
+        "pooled": {
+            "correct": pooled_correct,
+            "total_evaluated": pooled_total,
+            "skipped_unknown_state": pooled_skipped,
+            "micro_accuracy": micro,
+        },
+    }
+
+
+def cv_first_order_markov(
+    sessions_path: Path,
+    n_splits: int = 5,
+    random_state: int = 42,
+) -> dict[str, Any]:
+    return _cv_next_site_model(sessions_path, n_splits, random_state, FirstOrderMarkov)
+
+
+def cv_most_common_predictor(
+    sessions_path: Path,
+    n_splits: int = 5,
+    random_state: int = 42,
+) -> dict[str, Any]:
+    return _cv_next_site_model(sessions_path, n_splits, random_state, MostCommonPredictor)
+
+
 CV_RUNNERS: dict[str, Callable[[Path, int, int], dict[str, Any]]] = {
     "popular": cv_popular,
+    "markov": cv_first_order_markov,
+    "first_order_markov": cv_first_order_markov,
+    "most_common_predictor": cv_most_common_predictor,
 }
 
-RESULTS_FIELDNAMES = [
+CLASSIFIER_RESULTS_FIELDS = [
     "fold",
     "session_id",
     "hop",
@@ -155,7 +327,7 @@ RESULTS_FIELDNAMES = [
     "session_prediction_correct",
 ]
 
-SUMMARY_FIELDNAMES = [
+CLASSIFIER_SUMMARY_FIELDS = [
     "n_splits",
     "random_state",
     "fold",
@@ -165,11 +337,39 @@ SUMMARY_FIELDNAMES = [
     "session_accuracy",
 ]
 
+NEXT_SITE_RESULTS_FIELDS = [
+    "fold",
+    "session_id",
+    "from_hop",
+    "to_hop",
+    "from_sni",
+    "actual_next_sni",
+    "pred_rank1_sni",
+    "pred_rank1_prob",
+    "pred_rank2_sni",
+    "pred_rank2_prob",
+    "pred_rank3_sni",
+    "pred_rank3_prob",
+    "prob_actual_next",
+    "top1_correct",
+    "evaluated",
+]
 
-def write_validation_results_csv(report: dict[str, Any], out: Path) -> None:
+NEXT_SITE_SUMMARY_FIELDS = [
+    "n_splits",
+    "random_state",
+    "fold",
+    "correct_transitions",
+    "total_transitions_evaluated",
+    "skipped_unknown_from_state",
+    "top1_accuracy",
+]
+
+
+def write_classifier_results_csv(report: dict[str, Any], out: Path) -> None:
     out.parent.mkdir(parents=True, exist_ok=True)
     with open(out, "w", newline="", encoding="utf-8") as f:
-        w = csv.DictWriter(f, fieldnames=RESULTS_FIELDNAMES)
+        w = csv.DictWriter(f, fieldnames=CLASSIFIER_RESULTS_FIELDS)
         w.writeheader()
         for fr in report["folds"]:
             fold = fr["fold"]
@@ -188,13 +388,13 @@ def write_validation_results_csv(report: dict[str, Any], out: Path) -> None:
                 )
 
 
-def write_validation_summary_csv(report: dict[str, Any], out: Path) -> None:
+def write_classifier_summary_csv(report: dict[str, Any], out: Path) -> None:
     n_splits = report["n_splits"]
     seed = report["random_state"]
     pool = report["pooled"]
     out.parent.mkdir(parents=True, exist_ok=True)
     with open(out, "w", newline="", encoding="utf-8") as f:
-        w = csv.DictWriter(f, fieldnames=SUMMARY_FIELDNAMES)
+        w = csv.DictWriter(f, fieldnames=CLASSIFIER_SUMMARY_FIELDS)
         w.writeheader()
         for fr in report["folds"]:
             sa = fr["session_accuracy"]
@@ -222,7 +422,52 @@ def write_validation_summary_csv(report: dict[str, Any], out: Path) -> None:
         )
 
 
-def print_summary(report: dict[str, Any], n_splits: int) -> None:
+def write_next_site_results_csv(report: dict[str, Any], out: Path) -> None:
+    out.parent.mkdir(parents=True, exist_ok=True)
+    with open(out, "w", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=NEXT_SITE_RESULTS_FIELDS)
+        w.writeheader()
+        for fr in report["folds"]:
+            fold = fr["fold"]
+            for ep in fr["edge_predictions"]:
+                w.writerow({**ep, "fold": fold})
+
+
+def write_next_site_summary_csv(report: dict[str, Any], out: Path) -> None:
+    n_splits = report["n_splits"]
+    seed = report["random_state"]
+    pool = report["pooled"]
+    out.parent.mkdir(parents=True, exist_ok=True)
+    with open(out, "w", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=NEXT_SITE_SUMMARY_FIELDS)
+        w.writeheader()
+        for fr in report["folds"]:
+            ta = fr["transition_accuracy"]
+            w.writerow(
+                {
+                    "n_splits": n_splits,
+                    "random_state": seed,
+                    "fold": fr["fold"],
+                    "correct_transitions": ta["correct"],
+                    "total_transitions_evaluated": ta["total_evaluated"],
+                    "skipped_unknown_from_state": ta["skipped_unknown_state"],
+                    "top1_accuracy": round(ta["accuracy"], 6),
+                }
+            )
+        w.writerow(
+            {
+                "n_splits": n_splits,
+                "random_state": seed,
+                "fold": "pooled",
+                "correct_transitions": pool["correct"],
+                "total_transitions_evaluated": pool["total_evaluated"],
+                "skipped_unknown_from_state": pool["skipped_unknown_state"],
+                "top1_accuracy": round(pool["micro_accuracy"], 6),
+            }
+        )
+
+
+def print_classifier_summary(report: dict[str, Any], n_splits: int) -> None:
     for fr in report["folds"]:
         fold_idx = fr["fold"]
         sa = fr["session_accuracy"]
@@ -247,15 +492,43 @@ def print_summary(report: dict[str, Any], n_splits: int) -> None:
         )
 
 
+def print_next_site_summary(report: dict[str, Any], n_splits: int) -> None:
+    for fr in report["folds"]:
+        fold_idx = fr["fold"]
+        ta = fr["transition_accuracy"]
+        c, t = ta["correct"], ta["total_evaluated"]
+        sk = ta["skipped_unknown_state"]
+        acc = ta["accuracy"]
+        extra = f", {sk} edge(s) skipped (unknown from-state)" if sk else ""
+        print(
+            f"Fold {fold_idx}/{n_splits}: "
+            f"{c}/{t} top-1 next-SNI correct ({acc:.1%}){extra}"
+        )
+    p = report["pooled"]
+    micro = p["micro_accuracy"]
+    print(
+        f"\nPooled (micro) over evaluated transitions: "
+        f"{p['correct']}/{p['total_evaluated']} ({micro:.1%})"
+    )
+    if p["skipped_unknown_state"]:
+        print(
+            f"Skipped across folds (no training data for from-SNI): "
+            f"{p['skipped_unknown_state']} edge(s)"
+        )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="K-fold session-level CV for persona classifiers (sessions.csv).",
+        description=(
+            "K-fold CV on sessions.csv (session-level splits). "
+            "Classifiers: persona accuracy. Next-site models: top-1 transition accuracy."
+        ),
     )
     parser.add_argument(
         "model",
         choices=sorted(CV_RUNNERS.keys()),
         metavar="MODEL",
-        help="classifier to validate (%s)" % ", ".join(sorted(CV_RUNNERS.keys())),
+        help="model to validate (%s)" % ", ".join(sorted(CV_RUNNERS.keys())),
     )
     parser.add_argument(
         "--csv",
@@ -267,7 +540,7 @@ def main() -> None:
         "--results",
         type=Path,
         default=None,
-        help="per-row predictions CSV (default: data/<MODEL>_validation_results.csv)",
+        help="detailed results CSV (default: data/<MODEL>_validation_results.csv)",
     )
     parser.add_argument(
         "--summary",
@@ -295,14 +568,22 @@ def main() -> None:
         raise SystemExit("--folds must be at least 2")
 
     report = CV_RUNNERS[args.model](path, n_splits=args.folds, random_state=args.seed)
+    kind = model_kind(args.model)
 
     results_path = args.results or (DATA_DIR / f"{args.model}_validation_results.csv")
     summary_path = args.summary or (DATA_DIR / f"{args.model}_validation_summary.csv")
-    write_validation_results_csv(report, results_path)
-    write_validation_summary_csv(report, summary_path)
-    print(f"Wrote predictions to {results_path.resolve()}")
-    print(f"Wrote summary to    {summary_path.resolve()}\n")
 
+    if kind == "classifier":
+        write_classifier_results_csv(report, results_path)
+        write_classifier_summary_csv(report, summary_path)
+        print_summary = print_classifier_summary
+    else:
+        write_next_site_results_csv(report, results_path)
+        write_next_site_summary_csv(report, summary_path)
+        print_summary = print_next_site_summary
+
+    print(f"Wrote detailed results to {results_path.resolve()}")
+    print(f"Wrote summary to       {summary_path.resolve()}\n")
     print_summary(report, args.folds)
 
 

@@ -16,12 +16,20 @@ for p in (ROOT, SCRIPTS):
     if str(p) not in sys.path:
         sys.path.insert(0, str(p))
 
+from models.first_order_markov import FirstOrderMarkov
 from models.popular_classifier import PopularClassifier
+from models.most_common_predictor import MostCommonPredictor
 
 from input_processing import iter_sessions, load_session_rows
 
 DATA_DIR = ROOT / "data"
 MODELS_DIR = ROOT / "models"
+
+# Persona classifiers vs next-hop / sequence models — extend when adding trainers.
+CLASSIFIER_MODELS: frozenset[str] = frozenset({"popular"})
+NEXT_SITE_MODELS: frozenset[str] = frozenset(
+    {"markov", "first_order_markov", "most_common_predictor"}
+)
 
 
 def session_accuracy_popular(
@@ -66,15 +74,68 @@ def train_popular() -> None:
         print(f"demo.csv:     {c2}/{n2} sessions correct ({acc2:.1%})")
 
 
+def train_markov() -> None:
+    """First-order SNI transition model → markov.pkl"""
+    sessions_csv = DATA_DIR / "sessions.csv"
+    if not sessions_csv.is_file():
+        raise SystemExit(f"Missing {sessions_csv}; run generate.py first.")
+
+    rows = load_session_rows(sessions_csv)
+    m = FirstOrderMarkov().fit(rows)
+    MODELS_DIR.mkdir(parents=True, exist_ok=True)
+    out_path = MODELS_DIR / "markov.pkl"
+    m.save(out_path)
+    print(f"Saved {out_path}")
+
+    # Quick sanity: show next-site distribution from one common tail state
+    sample = "paypal.com"
+    dist = m.next_probabilities_list(sample)
+    if dist:
+        top = ", ".join(f"{s} ({p:.2%})" for s, p in dist[:5])
+        print(f"Example P(next | {sample!r}): {top}{' …' if len(dist) > 5 else ''}")
+    else:
+        print(f"No outgoing transitions from {sample!r} in training.")
+
+
+def train_most_common_predictor() -> None:
+    """Global most-frequent next SNI baseline → most_common_predictor.pkl"""
+    sessions_csv = DATA_DIR / "sessions.csv"
+    if not sessions_csv.is_file():
+        raise SystemExit(f"Missing {sessions_csv}; run generate.py first.")
+
+    rows = load_session_rows(sessions_csv)
+    p = MostCommonPredictor().fit(rows)
+    MODELS_DIR.mkdir(parents=True, exist_ok=True)
+    out_path = MODELS_DIR / "most_common_predictor.pkl"
+    p.save(out_path)
+    print(f"Saved {out_path}")
+    g = p.most_common_next()
+    if g:
+        n = p.next_target_counts().get(g, 0)
+        print(f"Always predicts next = {g!r} ({n} occurrences as next-hop in training)")
+    else:
+        print("No transitions in training; model has no guess.")
+
+
 # Register each trainable model: name shown on CLI -> no-arg trainer
 TRAINERS: dict[str, Callable[[], None]] = {
+    "first_order_markov": train_markov,
+    "markov": train_markov,
     "popular": train_popular,
+    "most_common_predictor": train_most_common_predictor,
 }
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Train a persona / traffic model from data/sessions.csv.",
+        description=(
+            "Train a model from data/sessions.csv. "
+            "Classifiers: %s. Next-site: %s."
+            % (
+                ", ".join(sorted(CLASSIFIER_MODELS)),
+                ", ".join(sorted(NEXT_SITE_MODELS)),
+            )
+        ),
     )
     parser.add_argument(
         "model",

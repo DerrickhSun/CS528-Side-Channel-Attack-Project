@@ -9,6 +9,7 @@ import argparse
 import sys
 from collections.abc import Callable
 from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
 SCRIPTS = Path(__file__).resolve().parent
@@ -17,8 +18,9 @@ for p in (ROOT, SCRIPTS):
         sys.path.insert(0, str(p))
 
 from models.first_order_markov import FirstOrderMarkov
-from models.popular_classifier import PopularClassifier
+from models.most_common_classifier import MostCommonClassifier
 from models.most_common_predictor import MostCommonPredictor
+from models.popular_classifier import PopularClassifier
 
 from input_processing import iter_sessions, load_session_rows
 
@@ -26,14 +28,14 @@ DATA_DIR = ROOT / "data"
 MODELS_DIR = ROOT / "models"
 
 # Persona classifiers vs next-hop / sequence models — extend when adding trainers.
-CLASSIFIER_MODELS: frozenset[str] = frozenset({"popular"})
+CLASSIFIER_MODELS: frozenset[str] = frozenset({"popular", "most_common_classifier"})
 NEXT_SITE_MODELS: frozenset[str] = frozenset(
     {"markov", "first_order_markov", "most_common_predictor"}
 )
 
 
-def session_accuracy_popular(
-    clf: PopularClassifier,
+def session_accuracy_classifier(
+    clf: Any,
     rows_path: Path,
 ) -> tuple[int, int, float]:
     """Returns (correct, total_sessions_with_prediction, accuracy)."""
@@ -65,12 +67,12 @@ def train_popular() -> None:
     clf.save(out_path)
     print(f"Saved {out_path}")
 
-    c, n, acc = session_accuracy_popular(clf, sessions_csv)
+    c, n, acc = session_accuracy_classifier(clf, sessions_csv)
     print(f"sessions.csv: {c}/{n} sessions correct ({acc:.1%})")
 
     demo_csv = DATA_DIR / "demo.csv"
     if demo_csv.is_file():
-        c2, n2, acc2 = session_accuracy_popular(clf, demo_csv)
+        c2, n2, acc2 = session_accuracy_classifier(clf, demo_csv)
         print(f"demo.csv:     {c2}/{n2} sessions correct ({acc2:.1%})")
 
 
@@ -117,10 +119,38 @@ def train_most_common_predictor() -> None:
         print("No transitions in training; model has no guess.")
 
 
+def train_most_common_classifier() -> None:
+    """Majority-session persona baseline → most_common_classifier.pkl"""
+    sessions_csv = DATA_DIR / "sessions.csv"
+    if not sessions_csv.is_file():
+        raise SystemExit(f"Missing {sessions_csv}; run generate.py first.")
+
+    rows = load_session_rows(sessions_csv)
+    clf = MostCommonClassifier().fit(rows)
+    MODELS_DIR.mkdir(parents=True, exist_ok=True)
+    out_path = MODELS_DIR / "most_common_classifier.pkl"
+    clf.save(out_path)
+    print(f"Saved {out_path}")
+    g = clf.most_common_persona()
+    if g:
+        print(f"Always predicts persona = {g!r}")
+    else:
+        print("No labeled sessions in training.")
+
+    c, n, acc = session_accuracy_classifier(clf, sessions_csv)
+    print(f"sessions.csv: {c}/{n} sessions correct ({acc:.1%})")
+
+    demo_csv = DATA_DIR / "demo.csv"
+    if demo_csv.is_file():
+        c2, n2, acc2 = session_accuracy_classifier(clf, demo_csv)
+        print(f"demo.csv:     {c2}/{n2} sessions correct ({acc2:.1%})")
+
+
 # Register each trainable model: name shown on CLI -> no-arg trainer
 TRAINERS: dict[str, Callable[[], None]] = {
     "first_order_markov": train_markov,
     "markov": train_markov,
+    "most_common_classifier": train_most_common_classifier,
     "popular": train_popular,
     "most_common_predictor": train_most_common_predictor,
 }

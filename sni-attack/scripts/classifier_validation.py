@@ -1,12 +1,13 @@
 """
 K-fold validation for models trained on sessions.csv (session-level splits).
 
-* **Classifiers** (e.g. popular): session-level persona accuracy; per-hop rows
-  repeat the session prediction.
+* **Classifiers** (e.g. popular, most_common_classifier): session-level persona
+  accuracy; per-hop rows repeat the session prediction.
 * **Next-site predictors** (Markov, most_common_predictor, …): transition-level
   top-1 next-SNI accuracy; one row per hop edge in the test split.
 
-Output: data/<model>_validation_results.csv and data/<model>_validation_summary.csv
+Output defaults: data/classifier_results/ or data/predictor_results/ (by model type),
+each with <model>_validation_results.csv and <model>_validation_summary.csv.
 """
 
 from __future__ import annotations
@@ -27,15 +28,18 @@ for p in (ROOT, SCRIPTS):
         sys.path.insert(0, str(p))
 
 from models.first_order_markov import FirstOrderMarkov
-from models.popular_classifier import PopularClassifier
+from models.most_common_classifier import MostCommonClassifier
 from models.most_common_predictor import MostCommonPredictor
+from models.popular_classifier import PopularClassifier
 
 from input_processing import group_rows_by_session, load_session_rows
 
 DATA_DIR = ROOT / "data"
+CLASSIFIER_RESULTS_DIR = DATA_DIR / "classifier_results"
+PREDICTOR_RESULTS_DIR = DATA_DIR / "predictor_results"
 
 # Extend when adding models: persona classifiers vs next-hop / sequence models.
-CLASSIFIER_MODELS: frozenset[str] = frozenset({"popular"})
+CLASSIFIER_MODELS: frozenset[str] = frozenset({"popular", "most_common_classifier"})
 NEXT_SITE_MODELS: frozenset[str] = frozenset(
     {"markov", "first_order_markov", "most_common_predictor"}
 )
@@ -85,11 +89,13 @@ def session_level_test_accuracy(
     return correct, total, skipped
 
 
-def cv_popular(
+def _cv_classifier_session(
     sessions_path: Path,
-    n_splits: int = 5,
-    random_state: int = 42,
+    n_splits: int,
+    random_state: int,
+    model_cls: type,
 ) -> dict[str, Any]:
+    """Shared K-fold CV for ``fit(rows)`` + ``predict(session_rows)`` classifiers."""
     sessions_list = _sessions_list_from_csv(sessions_path)
     n_sessions = len(sessions_list)
     if n_sessions < n_splits:
@@ -112,7 +118,7 @@ def cv_popular(
             train_rows.extend(sessions_list[i])
         test_sessions = [sessions_list[i] for i in test_idx]
 
-        clf = PopularClassifier().fit(train_rows)
+        clf = model_cls().fit(train_rows)
         correct, total, skipped = session_level_test_accuracy(clf, test_sessions)
         acc = correct / total if total else 0.0
         pooled_correct += correct
@@ -163,6 +169,22 @@ def cv_popular(
             "micro_accuracy": micro,
         },
     }
+
+
+def cv_popular(
+    sessions_path: Path,
+    n_splits: int = 5,
+    random_state: int = 42,
+) -> dict[str, Any]:
+    return _cv_classifier_session(sessions_path, n_splits, random_state, PopularClassifier)
+
+
+def cv_most_common_classifier(
+    sessions_path: Path,
+    n_splits: int = 5,
+    random_state: int = 42,
+) -> dict[str, Any]:
+    return _cv_classifier_session(sessions_path, n_splits, random_state, MostCommonClassifier)
 
 
 def _top3_prediction_fields(
@@ -311,6 +333,7 @@ def cv_most_common_predictor(
 
 CV_RUNNERS: dict[str, Callable[[Path, int, int], dict[str, Any]]] = {
     "popular": cv_popular,
+    "most_common_classifier": cv_most_common_classifier,
     "markov": cv_first_order_markov,
     "first_order_markov": cv_first_order_markov,
     "most_common_predictor": cv_most_common_predictor,
@@ -540,13 +563,19 @@ def main() -> None:
         "--results",
         type=Path,
         default=None,
-        help="detailed results CSV (default: data/<MODEL>_validation_results.csv)",
+        help=(
+            "detailed results CSV (default: data/classifier_results/ or "
+            "data/predictor_results/<MODEL>_validation_results.csv)"
+        ),
     )
     parser.add_argument(
         "--summary",
         type=Path,
         default=None,
-        help="per-fold + pooled summary CSV (default: data/<MODEL>_validation_summary.csv)",
+        help=(
+            "per-fold + pooled summary CSV (default: same folder as default results, "
+            "<MODEL>_validation_summary.csv)"
+        ),
     )
     parser.add_argument(
         "--folds",
@@ -569,9 +598,16 @@ def main() -> None:
 
     report = CV_RUNNERS[args.model](path, n_splits=args.folds, random_state=args.seed)
     kind = model_kind(args.model)
+    default_dir = (
+        CLASSIFIER_RESULTS_DIR if kind == "classifier" else PREDICTOR_RESULTS_DIR
+    )
 
-    results_path = args.results or (DATA_DIR / f"{args.model}_validation_results.csv")
-    summary_path = args.summary or (DATA_DIR / f"{args.model}_validation_summary.csv")
+    results_path = args.results or (
+        default_dir / f"{args.model}_validation_results.csv"
+    )
+    summary_path = args.summary or (
+        default_dir / f"{args.model}_validation_summary.csv"
+    )
 
     if kind == "classifier":
         write_classifier_results_csv(report, results_path)

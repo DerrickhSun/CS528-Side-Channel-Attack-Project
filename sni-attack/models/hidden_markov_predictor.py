@@ -19,14 +19,21 @@ from __future__ import annotations
 
 import pickle
 from pathlib import Path
-from typing import Any, Iterable, Mapping
+from typing import Any, Iterable, Literal, Mapping
 
 from models.first_order_markov import _sessions_ordered
 
 
 class HiddenMarkovPredictor:
-    def __init__(self, alpha: float = 1.0) -> None:
+    def __init__(
+        self,
+        alpha: float = 1.0,
+        prediction_target: Literal["next_site", "persona"] = "next_site",
+    ) -> None:
+        if prediction_target not in {"next_site", "persona"}:
+            raise ValueError("prediction_target must be 'next_site' or 'persona'")
         self.alpha = float(alpha)
+        self.prediction_target = prediction_target
         self._personas: list[str] = []
         self._snis: list[str] = []
         self._start_prob: dict[str, float] = {}
@@ -175,7 +182,31 @@ class HiddenMarkovPredictor:
         }
         return self._normalize(nxt)
 
-    def predict(self, rows: Iterable[Mapping[str, Any]]) -> list[tuple[str, float]]:
+    def _predict_persona_distribution(
+        self, rows: Iterable[Mapping[str, Any]]
+    ) -> list[tuple[str, float]]:
+        ordered = self._order_session_rows(list(rows))
+        observed = [
+            str(r.get("sni", "")).strip() for r in ordered if str(r.get("sni", "")).strip()
+        ]
+        if not self._personas:
+            return []
+
+        if observed:
+            current_post = self._persona_posterior(observed)
+            next_persona = self._next_persona_distribution(current_post)
+        else:
+            next_persona = dict(self._start_prob)
+        next_persona = self._normalize(next_persona)
+        return sorted(next_persona.items(), key=lambda x: (-x[1], x[0]))
+
+    def predict_persona(self, rows: Iterable[Mapping[str, Any]]) -> str | None:
+        ranked = self._predict_persona_distribution(rows)
+        return ranked[0][0] if ranked else None
+
+    def _predict_next_site_distribution(
+        self, rows: Iterable[Mapping[str, Any]]
+    ) -> list[tuple[str, float]]:
         ordered = self._order_session_rows(list(rows))
         observed = [str(r.get("sni", "")).strip() for r in ordered if str(r.get("sni", "")).strip()]
         if not observed or not self._personas or not self._snis:
@@ -195,6 +226,11 @@ class HiddenMarkovPredictor:
         dist = {s: p / z for s, p in next_sni.items()}
         return sorted(dist.items(), key=lambda x: (-x[1], x[0]))
 
+    def predict(self, rows: Iterable[Mapping[str, Any]]) -> list[tuple[str, float]]:
+        if self.prediction_target == "persona":
+            return self._predict_persona_distribution(rows)
+        return self._predict_next_site_distribution(rows)
+
     def next_probabilities(self, _current_sni: str) -> dict[str, float]:
         """
         Stateless call isn't enough for HMM context. Kept for compatibility.
@@ -212,6 +248,7 @@ class HiddenMarkovPredictor:
             pickle.dump(
                 {
                     "alpha": self.alpha,
+                    "prediction_target": self.prediction_target,
                     "personas": self._personas,
                     "snis": self._snis,
                     "start_prob": self._start_prob,
@@ -226,7 +263,10 @@ class HiddenMarkovPredictor:
     def load(cls, path: str | Path) -> HiddenMarkovPredictor:
         with open(path, "rb") as f:
             data = pickle.load(f)
-        obj = cls(alpha=float(data.get("alpha", 1.0)))
+        obj = cls(
+            alpha=float(data.get("alpha", 1.0)),
+            prediction_target=str(data.get("prediction_target", "next_site")),
+        )
         obj._personas = list(data.get("personas", []))
         obj._snis = list(data.get("snis", []))
         obj._start_prob = dict(data.get("start_prob", {}))

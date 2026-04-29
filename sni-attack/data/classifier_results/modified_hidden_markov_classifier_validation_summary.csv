@@ -1,0 +1,7 @@
+n_splits,random_state,fold,correct_sessions,total_with_prediction,skipped_sessions,session_accuracy
+5,42,1,30,30,0,1.0
+5,42,2,29,30,0,0.966667
+5,42,3,30,30,0,1.0
+5,42,4,30,30,0,1.0
+5,42,5,30,30,0,1.0
+5,42,pooled,149,150,0,0.993333

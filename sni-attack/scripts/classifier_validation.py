@@ -41,7 +41,14 @@ CLASSIFIER_RESULTS_DIR = DATA_DIR / "classifier_results"
 PREDICTOR_RESULTS_DIR = DATA_DIR / "predictor_results"
 
 # Extend when adding models: persona classifiers vs next-hop / sequence models.
-CLASSIFIER_MODELS: frozenset[str] = frozenset({"popular", "most_common_classifier"})
+CLASSIFIER_MODELS: frozenset[str] = frozenset(
+    {
+        "popular",
+        "most_common_classifier",
+        "hidden_markov_classifier",
+        "modified_hidden_markov_classifier",
+    }
+)
 NEXT_SITE_MODELS: frozenset[str] = frozenset(
     {
         "markov",
@@ -68,6 +75,19 @@ class SessionClassifier(Protocol):
     def predict(self, rows: list[dict[str, Any]]) -> str | None: ...
 
 
+def _coerce_persona_prediction(pred: Any) -> str | None:
+    """Allow classifier models to return either label or ranked distribution."""
+    if pred is None:
+        return None
+    if isinstance(pred, str):
+        return pred
+    if isinstance(pred, list) and pred:
+        top = pred[0]
+        if isinstance(top, tuple) and top and isinstance(top[0], str):
+            return top[0]
+    return None
+
+
 def _sessions_list_from_csv(sessions_path: Path) -> list[list[dict[str, Any]]]:
     rows = load_session_rows(sessions_path)
     grouped = group_rows_by_session(rows)
@@ -87,7 +107,7 @@ def session_level_test_accuracy(
     skipped = 0
     for session_rows in test_sessions:
         true_p = str(session_rows[0]["persona"]).strip()
-        pred = clf.predict(session_rows)
+        pred = _coerce_persona_prediction(clf.predict(session_rows))
         if pred is None:
             skipped += 1
             continue
@@ -101,7 +121,7 @@ def _cv_classifier_session(
     sessions_path: Path,
     n_splits: int,
     random_state: int,
-    model_cls: type,
+    model_factory: Callable[[], Any],
 ) -> dict[str, Any]:
     """Shared K-fold CV for ``fit(rows)`` + ``predict(session_rows)`` classifiers."""
     sessions_list = _sessions_list_from_csv(sessions_path)
@@ -126,7 +146,7 @@ def _cv_classifier_session(
             train_rows.extend(sessions_list[i])
         test_sessions = [sessions_list[i] for i in test_idx]
 
-        clf = model_cls().fit(train_rows)
+        clf = model_factory().fit(train_rows)
         correct, total, skipped = session_level_test_accuracy(clf, test_sessions)
         acc = correct / total if total else 0.0
         pooled_correct += correct
@@ -136,7 +156,7 @@ def _cv_classifier_session(
         row_predictions: list[dict[str, Any]] = []
         for session_rows in test_sessions:
             true_p = str(session_rows[0]["persona"]).strip()
-            pred = clf.predict(session_rows)
+            pred = _coerce_persona_prediction(clf.predict(session_rows))
             session_ok = pred is not None and pred == true_p
             for r in session_rows:
                 row_predictions.append(
@@ -193,6 +213,32 @@ def cv_most_common_classifier(
     random_state: int = 42,
 ) -> dict[str, Any]:
     return _cv_classifier_session(sessions_path, n_splits, random_state, MostCommonClassifier)
+
+
+def cv_hidden_markov_classifier(
+    sessions_path: Path,
+    n_splits: int = 5,
+    random_state: int = 42,
+) -> dict[str, Any]:
+    return _cv_classifier_session(
+        sessions_path,
+        n_splits,
+        random_state,
+        lambda: HiddenMarkovPredictor(prediction_target="persona"),
+    )
+
+
+def cv_modified_hidden_markov_classifier(
+    sessions_path: Path,
+    n_splits: int = 5,
+    random_state: int = 42,
+) -> dict[str, Any]:
+    return _cv_classifier_session(
+        sessions_path,
+        n_splits,
+        random_state,
+        lambda: ModifiedHiddenMarkovPredictor(prediction_target="persona"),
+    )
 
 
 def _top3_prediction_fields(
@@ -361,6 +407,8 @@ def cv_modified_hidden_markov_predictor(
 CV_RUNNERS: dict[str, Callable[[Path, int, int], dict[str, Any]]] = {
     "popular": cv_popular,
     "most_common_classifier": cv_most_common_classifier,
+    "hidden_markov_classifier": cv_hidden_markov_classifier,
+    "modified_hidden_markov_classifier": cv_modified_hidden_markov_classifier,
     "markov": cv_first_order_markov,
     "first_order_markov": cv_first_order_markov,
     "hidden_markov_predictor": cv_hidden_markov_predictor,

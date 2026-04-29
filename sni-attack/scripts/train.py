@@ -18,6 +18,8 @@ for p in (ROOT, SCRIPTS):
         sys.path.insert(0, str(p))
 
 from models.first_order_markov import FirstOrderMarkov
+from models.hidden_markov_predictor import HiddenMarkovPredictor
+from models.modified_hidden_markov_predictor import ModifiedHiddenMarkovPredictor
 from models.most_common_classifier import MostCommonClassifier
 from models.most_common_predictor import MostCommonPredictor
 from models.popular_classifier import PopularClassifier
@@ -30,7 +32,13 @@ MODELS_DIR = ROOT / "models"
 # Persona classifiers vs next-hop / sequence models — extend when adding trainers.
 CLASSIFIER_MODELS: frozenset[str] = frozenset({"popular", "most_common_classifier"})
 NEXT_SITE_MODELS: frozenset[str] = frozenset(
-    {"markov", "first_order_markov", "most_common_predictor"}
+    {
+        "markov",
+        "first_order_markov",
+        "hidden_markov_predictor",
+        "modified_hidden_markov_predictor",
+        "most_common_predictor",
+    }
 )
 
 
@@ -119,6 +127,57 @@ def train_most_common_predictor() -> None:
         print("No transitions in training; model has no guess.")
 
 
+def train_hidden_markov_predictor() -> None:
+    """Persona-transition HMM-style next-site predictor → hidden_markov_predictor.pkl"""
+    sessions_csv = DATA_DIR / "sessions.csv"
+    if not sessions_csv.is_file():
+        raise SystemExit(f"Missing {sessions_csv}; run generate.py first.")
+
+    rows = load_session_rows(sessions_csv)
+    m = HiddenMarkovPredictor().fit(rows)
+    MODELS_DIR.mkdir(parents=True, exist_ok=True)
+    out_path = MODELS_DIR / "hidden_markov_predictor.pkl"
+    m.save(out_path)
+    print(f"Saved {out_path}")
+
+    # Example next-site distribution from an early session prefix
+    first_session = next(iter_sessions(rows))[1]
+    prefix = first_session[: min(3, len(first_session))]
+    dist = m.predict(prefix)
+    if dist:
+        top = ", ".join(f"{s} ({p:.2%})" for s, p in dist[:5])
+        print(f"Example HMM next-site distribution: {top}{' ...' if len(dist) > 5 else ''}")
+    else:
+        print("No HMM prediction available for sample prefix.")
+
+
+def train_modified_hidden_markov_predictor() -> None:
+    """Observation-conditioned HMM next-site predictor → modified_hidden_markov_predictor.pkl"""
+    sessions_csv = DATA_DIR / "sessions.csv"
+    if not sessions_csv.is_file():
+        raise SystemExit(f"Missing {sessions_csv}; run generate.py first.")
+
+    rows = load_session_rows(sessions_csv)
+    m = ModifiedHiddenMarkovPredictor().fit(rows)
+    MODELS_DIR.mkdir(parents=True, exist_ok=True)
+    out_path = MODELS_DIR / "modified_hidden_markov_predictor.pkl"
+    m.save(out_path)
+    print(f"Saved {out_path}")
+
+    # Example next-site distribution from an early session prefix
+    first_session = next(iter_sessions(rows))[1]
+    prefix = first_session[: min(3, len(first_session))]
+    dist = m.predict(prefix)
+    if dist:
+        top = ", ".join(f"{s} ({p:.2%})" for s, p in dist[:5])
+        print(
+            "Example modified-HMM next-site distribution: "
+            f"{top}{' ...' if len(dist) > 5 else ''}"
+        )
+    else:
+        print("No modified-HMM prediction available for sample prefix.")
+
+
 def train_most_common_classifier() -> None:
     """Majority-session persona baseline → most_common_classifier.pkl"""
     sessions_csv = DATA_DIR / "sessions.csv"
@@ -152,6 +211,8 @@ TRAINERS: dict[str, Callable[[], None]] = {
     "markov": train_markov,
     "most_common_classifier": train_most_common_classifier,
     "popular": train_popular,
+    "hidden_markov_predictor": train_hidden_markov_predictor,
+    "modified_hidden_markov_predictor": train_modified_hidden_markov_predictor,
     "most_common_predictor": train_most_common_predictor,
 }
 

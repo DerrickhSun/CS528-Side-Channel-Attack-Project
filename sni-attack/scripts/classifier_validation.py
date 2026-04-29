@@ -28,6 +28,8 @@ for p in (ROOT, SCRIPTS):
         sys.path.insert(0, str(p))
 
 from models.first_order_markov import FirstOrderMarkov
+from models.hidden_markov_predictor import HiddenMarkovPredictor
+from models.modified_hidden_markov_predictor import ModifiedHiddenMarkovPredictor
 from models.most_common_classifier import MostCommonClassifier
 from models.most_common_predictor import MostCommonPredictor
 from models.popular_classifier import PopularClassifier
@@ -41,7 +43,13 @@ PREDICTOR_RESULTS_DIR = DATA_DIR / "predictor_results"
 # Extend when adding models: persona classifiers vs next-hop / sequence models.
 CLASSIFIER_MODELS: frozenset[str] = frozenset({"popular", "most_common_classifier"})
 NEXT_SITE_MODELS: frozenset[str] = frozenset(
-    {"markov", "first_order_markov", "most_common_predictor"}
+    {
+        "markov",
+        "first_order_markov",
+        "hidden_markov_predictor",
+        "modified_hidden_markov_predictor",
+        "most_common_predictor",
+    }
 )
 
 ModelKind = Literal["classifier", "next_site"]
@@ -207,7 +215,7 @@ def _cv_next_site_model(
     random_state: int,
     model_cls: type,
 ) -> dict[str, Any]:
-    """Shared K-fold CV for models with ``fit(rows)``, ``next_probabilities(s)``."""
+    """Shared K-fold CV for models with ``fit(rows)`` + ``predict(session_prefix)``."""
     sessions_list = _sessions_list_from_csv(sessions_path)
     n_sessions = len(sessions_list)
     if n_sessions < n_splits:
@@ -244,8 +252,9 @@ def _cv_next_site_model(
                 from_hop = int(r_from["hop"])
                 to_hop = int(r_to["hop"])
                 sid = int(r_from["session_id"])
-                dist = m.next_probabilities(from_sni)
-                if not dist:
+                prefix = session_rows[: i + 1]
+                ranked = m.predict(prefix)
+                if not ranked:
                     skipped += 1
                     edge_predictions.append(
                         {
@@ -262,11 +271,11 @@ def _cv_next_site_model(
                     )
                     continue
                 total += 1
-                ranked = m.next_probabilities_list(from_sni)
-                top1 = ranked[0][0] if ranked else ""
+                top1 = ranked[0][0]
                 top1_ok = top1 == actual_next
                 if top1_ok:
                     correct += 1
+                dist = {name: prob for name, prob in ranked}
                 prob_actual = float(dist.get(actual_next, 0.0))
                 edge_predictions.append(
                     {
@@ -331,11 +340,31 @@ def cv_most_common_predictor(
     return _cv_next_site_model(sessions_path, n_splits, random_state, MostCommonPredictor)
 
 
+def cv_hidden_markov_predictor(
+    sessions_path: Path,
+    n_splits: int = 5,
+    random_state: int = 42,
+) -> dict[str, Any]:
+    return _cv_next_site_model(sessions_path, n_splits, random_state, HiddenMarkovPredictor)
+
+
+def cv_modified_hidden_markov_predictor(
+    sessions_path: Path,
+    n_splits: int = 5,
+    random_state: int = 42,
+) -> dict[str, Any]:
+    return _cv_next_site_model(
+        sessions_path, n_splits, random_state, ModifiedHiddenMarkovPredictor
+    )
+
+
 CV_RUNNERS: dict[str, Callable[[Path, int, int], dict[str, Any]]] = {
     "popular": cv_popular,
     "most_common_classifier": cv_most_common_classifier,
     "markov": cv_first_order_markov,
     "first_order_markov": cv_first_order_markov,
+    "hidden_markov_predictor": cv_hidden_markov_predictor,
+    "modified_hidden_markov_predictor": cv_modified_hidden_markov_predictor,
     "most_common_predictor": cv_most_common_predictor,
 }
 

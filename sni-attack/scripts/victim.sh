@@ -1,7 +1,6 @@
 #!/bin/bash
 # Runs on dns_user (victim VM).
 # Reads a session CSV (sessions.csv or demo.csv), curls each SNI over HTTPS,
-# sleeps ~2s between hops and ~8s between sessions.
 #
 # Usage: bash victim.sh <csvfile>
 #   e.g. bash victim.sh ../data/demo.csv
@@ -25,8 +24,8 @@ tail -n +2 "$CSV" | while IFS=, read -r session_id persona sni timestamp hop; do
     # Between sessions: longer pause so the attacker's boundary detector fires
     if [ -n "$PREV_SESSION" ] && [ "$session_id" != "$PREV_SESSION" ]; then
         echo ""
-        echo "--- end of session $PREV_SESSION, sleeping 3s ---"
-        sleep 3
+        echo "--- end of session $PREV_SESSION, sleeping 5s ---"
+        sleep 5
     fi
 
     # New session header

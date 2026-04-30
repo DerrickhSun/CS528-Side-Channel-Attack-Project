@@ -4,9 +4,9 @@
 #
 # Captures TLS traffic with tcpdump, then parses SNIs out of the pcap using parse_sni.py
 #
-# Output:
-#   data/capture.pcap        — raw packet dump (kept for debugging)
-#   data/captured_sni.csv    — parsed timestamp,sni rows
+# Output (written to the same scripts/ directory):
+#   capture.pcap        — raw packet dump (kept for debugging)
+#   captured_sni.csv    — parsed timestamp,sni rows
 #
 # Stop: Ctrl-C (the parser runs automatically on exit)
 
@@ -14,10 +14,9 @@
 
 INTERFACE="eth14"
 BPF="tcp port 443"
-DATA_DIR="data"
-PCAP_FILE="$DATA_DIR/capture.pcap"
-CSV_FILE="$DATA_DIR/captured_sni.csv"
-PARSER="$(dirname "$0")/parse_sni.py"
+PCAP_FILE="capture.pcap"
+CSV_FILE="captured_sni.csv"
+PARSER="parse_sni.py"
 
 # --- Pre-flight -------------------------------------------------------
 
@@ -30,8 +29,6 @@ if [[ ! -f "$PARSER" ]]; then
     echo "ERROR: parse_sni.py not found at $PARSER" >&2
     exit 1
 fi
-
-mkdir -p "$DATA_DIR"
 
 echo "[capture.sh] Interface: $INTERFACE"
 echo "[capture.sh] Pcap:      $PCAP_FILE"

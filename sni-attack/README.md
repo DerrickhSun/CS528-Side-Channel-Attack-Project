@@ -23,19 +23,19 @@ Discuss Encrypted Client Hello (ECH) and its predecessor ESNI as the community's
 sni-attack/
 ├── data/
 │   ├── sessions.csv          # 150 labeled training sessions (generated)
-│   ├── demo.csv              # 15 fresh sessions for live demo (generated)
-│   ├── capture.pcap          # Raw packet dump from tcpdump (kept for debugging)
-│   └── captured_sni.csv      # Parsed SNI hostnames + timestamps [attacker VM]
+│   └── demo.csv              # 15 fresh sessions for live demo (generated)
 ├── models/
 │   ├── markov.pkl            # Markov transition tables per persona
 │   └── classifier.pkl        # Persona classifier
 ├── scripts/
 │   ├── generate.py           # Build sessions.csv + demo.csv [dev machine]
 │   ├── train.py              # Train + evaluate models [dev machine]
-│   ├── victim.sh             # curl sessions from CSV [victim VM]
-│   ├── capture.sh            # tcpdump → capture.pcap, then calls parse_sni.py [attacker VM]
-│   ├── parse_sni.py          # Pure Python 2.7 pcap parser — extracts SNI from TLS ClientHellos [attacker VM]
-│   └── attack.py             # Live classify + predict [attacker VM]
+│   ├── victim.sh             # curl sessions from CSV [dns_user]
+│   ├── capture.sh            # tcpdump → capture.pcap, then calls parse_sni.py [dns_attacker]
+│   ├── parse_sni.py          # Pure Python 2.7 pcap parser — extracts SNI from TLS ClientHellos [dns_attacker]
+│   ├── capture.pcap          # Raw packet dump from tcpdump (written at runtime, kept for debugging)
+│   ├── captured_sni.csv      # Parsed SNI hostnames + timestamps (written at runtime) [dns_attacker]
+│   └── attack.py             # Live classify + predict [dns_attacker]
 ├── README.md
 └── requirements.txt
 ```
@@ -174,19 +174,10 @@ python scripts/train.py
 sudo bash scripts/capture.sh
 
 # Victim VM — browse through sessions to generate TLS traffic
-bash scripts/victim.sh data/sessions.csv
+bash scripts/victim.sh demo.csv
 ```
 
-Press Ctrl-C on the attacker when done. `capture.sh` automatically calls `parse_sni.py` on exit and writes `data/captured_sni.csv`. Open it to show the plaintext SNI leak — every hostname the victim visited, no decryption required.
-
-To manually test the victim side without a full session CSV, you can run curl directly:
-
-```bash
-for host in github.com google.com purdue.edu; do
-    curl -sI https://$host > /dev/null
-    sleep 2
-done
-```
+This writes `capture.pcap` and `captured_sni.csv` on the attacker VM.
 
 ### Part 2 — Live prediction demo (both VMs)
 
@@ -195,14 +186,14 @@ done
 python scripts/attack.py
 
 # Victim VM — browse demo sessions
-bash scripts/victim.sh data/demo.csv
+bash scripts/victim.sh demo.csv
 ```
 
 The attacker terminal prints persona classification and next-site predictions in real time.
 
 ### Part 3 — ECH mitigation demo
 
-Enable ECH on the victim VM, re-run a few demo sessions, and show that `captured_sni.csv` comes back empty — tcpdump captures packets but `parse_sni.py` finds no readable SNI fields.
+Enable ECH on the victim VM, re-run a few demo sessions, and show that `scripts/captured_sni.csv` comes back empty — tcpdump captures packets but `parse_sni.py` finds no readable SNI fields.
 
 ---
 

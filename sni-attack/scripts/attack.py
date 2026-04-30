@@ -12,6 +12,13 @@ Python 2.7 compatible (Ubuntu 12.04).
 Usage (run from scripts/):
     sudo python attack.py
 
+Optional (Python 3 + trained pickles from ``train.py``):
+    sudo python3 attack.py --classifier-pkl ../models/popular_classifier.pkl \\
+        --predictor-pkl ../models/markov.pkl --interface eth0
+
+When ``--classifier-pkl`` / ``--predictor-pkl`` are omitted, behavior matches
+the original hardcoded CLASSIFIER / MARKOV tables.
+
 High-level flow:
   1. Spawn tcpdump to capture raw TLS packets from the network
   2. Parse the pcap stream in real time to extract SNI hostnames
@@ -22,6 +29,7 @@ High-level flow:
 """
 
 from __future__ import print_function
+import argparse
 import os
 import struct
 import subprocess
@@ -29,8 +37,15 @@ import sys
 
 # parse_sni.py lives in the same folder. Add it to the path so we can import
 # its pcap-parsing functions directly rather than duplicating them here.
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+_SCRIPTS_DIR = os.path.dirname(os.path.abspath(__file__))
+_ROOT_DIR = os.path.dirname(_SCRIPTS_DIR)
+sys.path.insert(0, _SCRIPTS_DIR)
 import parse_sni
+
+# When set by ``--classifier-pkl`` / ``--predictor-pkl``, ``classify`` / ``predict``
+# delegate to these objects instead of the hardcoded dicts below.
+_LIVE_CLASSIFIER = None
+_LIVE_PREDICTOR = None
 
 # ---------------------------------------------------------------------------
 # Hardcoded models
@@ -153,6 +168,124 @@ PERSONA_VOCAB = {
 INTERFACE   = 'eth14'
 SESSION_GAP = 4.0   # seconds — gap larger than this triggers a new session boundary
 
+
+def _session_rows(session_id, snis, timestamps):
+    """Turns live session into CSV-shaped rows for trained models (same schema as sessions.csv)."""
+    rows = []
+    for hop, sni in enumerate(snis):
+        ts = timestamps[hop] if hop < len(timestamps) else float(hop)
+        rows.append(
+            {
+                "session_id": session_id,
+                "hop": hop,
+                "timestamp": ts,
+                "sni": sni,
+                "persona": "",
+            }
+        )
+    return rows
+
+
+def _load_classifier_pickle(path):
+    """Load a persona classifier from ``train.py`` output (requires Python 3)."""
+    global _LIVE_CLASSIFIER
+    if sys.version_info[0] < 3:
+        sys.stderr.write(
+            "[attack.py] Loading classifier .pkl requires Python 3 "
+            "(same as ``scripts/train.py``).\n"
+        )
+        sys.exit(1)
+    if _ROOT_DIR not in sys.path:
+        sys.path.insert(0, _ROOT_DIR)
+    import pickle
+
+    from models.most_common_classifier import MostCommonClassifier
+    from models.popular_classifier import PopularClassifier
+
+    with open(path, "rb") as f:
+        obj = pickle.load(f)
+    if isinstance(obj, (PopularClassifier, MostCommonClassifier)):
+        _LIVE_CLASSIFIER = obj
+        return
+    sys.stderr.write(
+        "[attack.py] Unsupported classifier type in pickle: %r\n" % (type(obj),)
+    )
+    sys.exit(1)
+
+
+def _load_predictor_pickle(path):
+    """Load a next-site predictor from ``train.py`` output (requires Python 3)."""
+    global _LIVE_PREDICTOR
+    if sys.version_info[0] < 3:
+        sys.stderr.write(
+            "[attack.py] Loading predictor .pkl requires Python 3 "
+            "(same as ``scripts/train.py``).\n"
+        )
+        sys.exit(1)
+    if _ROOT_DIR not in sys.path:
+        sys.path.insert(0, _ROOT_DIR)
+    import pickle
+
+    from models.first_order_markov import FirstOrderMarkov
+    from models.hidden_markov_predictor import HiddenMarkovPredictor
+    from models.modified_hidden_markov_predictor import ModifiedHiddenMarkovPredictor
+    from models.most_common_predictor import MostCommonPredictor
+
+    with open(path, "rb") as f:
+        obj = pickle.load(f)
+    if isinstance(
+        obj,
+        (
+            FirstOrderMarkov,
+            MostCommonPredictor,
+            HiddenMarkovPredictor,
+            ModifiedHiddenMarkovPredictor,
+        ),
+    ):
+        _LIVE_PREDICTOR = obj
+        return
+    sys.stderr.write(
+        "[attack.py] Unsupported predictor type in pickle: %r\n" % (type(obj),)
+    )
+    sys.exit(1)
+
+
+def _classify_from_pickle(seen_snis, timestamps, session_id):
+    """Popular / most-common classifier + confidence matching vote share."""
+    from collections import Counter
+
+    rows = _session_rows(session_id, seen_snis, timestamps)
+    pred = _LIVE_CLASSIFIER.predict(rows)
+    if pred is None:
+        return None, 0
+    dom = getattr(_LIVE_CLASSIFIER, "dominant_persona_for_sni", None)
+    if dom is None:
+        # MostCommonClassifier: constant session label
+        return pred, 100
+    # PopularClassifier: confidence = vote share for the predicted persona
+    votes = Counter()
+    for sni in seen_snis:
+        p = dom(sni)
+        if p:
+            votes[p] += 1
+    if not votes:
+        return pred, 0
+    total = float(sum(votes.values()))
+    return pred, int(round(votes[pred] / total * 100))
+
+
+def _predict_from_pickle(seen_snis, timestamps, session_id, top_n):
+    """Next-site distribution from a trained predictor (ignores legacy persona)."""
+    rows = _session_rows(session_id, seen_snis, timestamps)
+    ranked = _LIVE_PREDICTOR.predict(rows)
+    if not ranked:
+        return []
+    out = []
+    for sni, prob in ranked[:top_n]:
+        out.append((sni, int(round(float(prob) * 100.0))))
+    return out
+
+
 # ---------------------------------------------------------------------------
 # Step 1 & 2 — Stream live SNIs from tcpdump
 # ---------------------------------------------------------------------------
@@ -214,21 +347,24 @@ def stream_sni(pipe):
 # Step 4 — Classify the user persona
 # ---------------------------------------------------------------------------
 
-def classify(seen_snis):
+def classify(seen_snis, timestamps=None, session_id=0):
     """
     Determine the most likely persona from the SNIs seen so far in this session.
 
-    Method: frequency vote. Each exclusive SNI casts one vote for its persona.
-    Shared SNIs (google.com, reddit.com) are ignored because they appear in
-    all personas and would dilute the signal.
+    Default (no ``--classifier-pkl``): frequency vote over the hardcoded
+    ``CLASSIFIER`` dict; shared SNIs in ``SHARED`` are skipped.
 
-    Returns (persona_string, confidence_pct) or (None, 0) if no exclusive
-    SNIs have been seen yet (can't classify on shared SNIs alone).
+    With ``--classifier-pkl``: delegates to the loaded ``PopularClassifier`` or
+    ``MostCommonClassifier`` (Python 3). ``timestamps`` and ``session_id`` are
+    used only in that mode to build row dicts like ``sessions.csv``.
 
-    Confidence is the fraction of exclusive-SNI votes that went to the winner,
-    expressed as a percentage. It naturally starts at 100% on the first
-    exclusive SNI and drops if cross-persona SNIs are seen later in the session.
+    Returns (persona_string, confidence_pct) or (None, 0) when the model
+    cannot produce a persona yet.
     """
+    if _LIVE_CLASSIFIER is not None:
+        ts = timestamps if timestamps is not None else []
+        return _classify_from_pickle(seen_snis, ts, session_id)
+
     votes = {}
     for sni in seen_snis:
         if sni in SHARED:
@@ -249,17 +385,34 @@ def classify(seen_snis):
 # Step 5 — Predict the next destination using the Markov table
 # ---------------------------------------------------------------------------
 
-def predict(persona, current_sni, top_n=3):
+def predict(
+    persona,
+    current_sni,
+    top_n=3,
+    seen_snis=None,
+    timestamps=None,
+    session_id=0,
+):
     """
-    Given the classified persona and the most recently seen SNI, return the
-    top_n most likely next destinations with their probabilities.
+    Return the top_n most likely next SNIs as (hostname, percent).
 
-    Looks up the current SNI in that persona's Markov row. If no row exists
-    (SNI was rare in training data), falls back to a uniform distribution
-    over the persona's full vocabulary so we always return something useful.
+    Default (no ``--predictor-pkl``): uses hardcoded per-persona ``MARKOV``;
+    requires a non-None ``persona`` from ``classify``.
 
-    Returns a list of (sni, pct) tuples, ranked highest probability first.
+    With ``--predictor-pkl``: delegates to the loaded predictor (Markov / HMM /
+    baselines). Uses the full ``seen_snis`` prefix when provided; ignores
+    ``persona`` for those models.
+
+    ``seen_snis`` / ``timestamps`` / ``session_id`` are only used in pickle mode.
     """
+    if _LIVE_PREDICTOR is not None:
+        snis = seen_snis if seen_snis is not None else [current_sni]
+        ts = timestamps if timestamps is not None else []
+        return _predict_from_pickle(snis, ts, session_id, top_n)
+
+    if not persona:
+        return []
+
     # Try to find a trained transition row for this SNI under the given persona
     row = MARKOV.get(persona, {}).get(current_sni)
 
@@ -293,27 +446,69 @@ def print_update(session_num, seen, persona, confidence, predictions):
     print('  Seen:     %s' % ' -> '.join(seen))
     if persona:
         print('  Persona:  %s (confidence %d%%)' % (persona, confidence))
-        if predictions:
-            # Show top-3 predictions with their probabilities
-            pred_str = ' | '.join('%s (%d%%)' % (s, p) for s, p in predictions)
-            print('  Predicts: %s' % pred_str)
-            # The top prediction is the phishing target -- attacker acts on this
-            print('  -> ACTION: Prepare fake %s credential page' % predictions[0][0])
     else:
-        # Not enough signal yet -- waiting for a non-shared SNI
+        # Hardcoded path: usually only shared SNIs so far. Pickle path may still
+        # have next-site predictions without a persona label (e.g. Markov only).
         print('  Persona:  unknown (only shared SNIs seen so far)')
+    if predictions:
+        pred_str = ' | '.join('%s (%d%%)' % (s, p) for s, p in predictions)
+        print('  Predicts: %s' % pred_str)
+        print('  -> ACTION: Prepare fake %s credential page' % predictions[0][0])
     sys.stdout.flush()  # ensure output appears immediately (no buffering)
 
 # ---------------------------------------------------------------------------
 # Main -- wire everything together
 # ---------------------------------------------------------------------------
 
+def _parse_cli():
+    p = argparse.ArgumentParser(
+        description="Live SNI capture + persona classification + next-site prediction.",
+    )
+    p.add_argument(
+        "-i",
+        "--interface",
+        default=None,
+        help="tcpdump interface (default: INTERFACE constant in this file, e.g. eth14)",
+    )
+    p.add_argument(
+        "--classifier-pkl",
+        default=None,
+        metavar="PATH",
+        help="Optional path to popular_classifier.pkl or most_common_classifier.pkl",
+    )
+    p.add_argument(
+        "--predictor-pkl",
+        default=None,
+        metavar="PATH",
+        help="Optional path to markov.pkl, most_common_predictor.pkl, or HMM pkls",
+    )
+    return p.parse_args()
+
+
 def main():
+    global INTERFACE, _LIVE_CLASSIFIER, _LIVE_PREDICTOR
+
+    args = _parse_cli()
+    if args.interface:
+        INTERFACE = args.interface
+    if args.classifier_pkl:
+        _load_classifier_pickle(os.path.abspath(args.classifier_pkl))
+    if args.predictor_pkl:
+        _load_predictor_pickle(os.path.abspath(args.predictor_pkl))
+
     # -U flag: write each packet to stdout immediately (packet-buffered mode).
     # Without -U, tcpdump buffers output and packets pile up before reaching us,
     # breaking the "live" feel of the demo.
     cmd = ['tcpdump', '-i', INTERFACE, '-n', '-s', '0', '-U', '-w', '-', 'tcp port 443']
 
+    if _LIVE_CLASSIFIER is not None or _LIVE_PREDICTOR is not None:
+        print(
+            '[attack.py] Live models: classifier=%s predictor=%s'
+            % (
+                args.classifier_pkl or '(hardcoded)',
+                args.predictor_pkl or '(hardcoded)',
+            )
+        )
     print('[attack.py] Starting live capture on interface %s' % INTERFACE)
     print('[attack.py] Waiting for TLS traffic... (Ctrl-C to stop)')
     print('')
@@ -324,6 +519,7 @@ def main():
 
     session_num = 0   # increments each time a gap > SESSION_GAP is detected
     seen        = []  # SNIs observed in the current session, in order
+    seen_ts     = []  # parallel timestamps (for pickle-backed models)
     last_ts     = None
 
     try:
@@ -335,13 +531,24 @@ def main():
             if last_ts is not None and (ts - last_ts) > SESSION_GAP:
                 session_num += 1
                 seen = []
+                seen_ts = []
 
             seen.append(sni)
+            seen_ts.append(ts)
             last_ts = ts
 
             # --- Steps 4 & 5: classify and predict ---
-            persona, confidence = classify(seen)
-            predictions = predict(persona, sni) if persona else []
+            persona, confidence = classify(seen, timestamps=seen_ts, session_id=session_num)
+            if _LIVE_PREDICTOR is not None:
+                predictions = predict(
+                    persona,
+                    sni,
+                    seen_snis=seen,
+                    timestamps=seen_ts,
+                    session_id=session_num,
+                )
+            else:
+                predictions = predict(persona, sni) if persona else []
 
             # --- Step 6: print the update ---
             print_update(session_num, seen, persona, confidence, predictions)

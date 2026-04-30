@@ -9,7 +9,7 @@ import pickle
 from pathlib import Path
 from typing import Any, Iterable, Mapping
 
-from models.first_order_markov import _sessions_ordered
+from models.model_helper import order_session_rows, sessions_ordered
 
 
 class MostCommonPredictor:
@@ -23,7 +23,7 @@ class MostCommonPredictor:
         hop. ``persona`` is ignored. Same row schema as ``FirstOrderMarkov.fit``.
         """
         self._next_site_counts.clear()
-        for session in _sessions_ordered(rows):
+        for session in sessions_ordered(rows):
             for i in range(len(session) - 1):
                 nxt = str(session[i + 1]["sni"]).strip()
                 if nxt:
@@ -56,31 +56,13 @@ class MostCommonPredictor:
             return []
         return [(self._guess, 1.0)]
 
-    @staticmethod
-    def _order_session_rows(rows: list[Mapping[str, Any]]) -> list[Mapping[str, Any]]:
-        if not rows:
-            return rows
-        if not any("hop" in r for r in rows):
-            return list(rows)
-
-        def sort_key(r: Mapping[str, Any]) -> tuple[int, float]:
-            hop = int(r["hop"]) if "hop" in r else 0
-            ts = r.get("timestamp", 0)
-            try:
-                tsf = float(ts)
-            except (TypeError, ValueError):
-                tsf = 0.0
-            return hop, tsf
-
-        return sorted(rows, key=sort_key)
-
     def predict(self, rows: Iterable[Mapping[str, Any]]) -> list[tuple[str, float]]:
         """
         Same session-row input as ``FirstOrderMarkov.predict``; the current SNI
         is ignored. Returns ``[(guess, 1.0)]`` when trained with at least one
         transition, else ``[]``.
         """
-        ordered = self._order_session_rows(list(rows))
+        ordered = order_session_rows(list(rows))
         if not ordered or self._guess is None:
             return []
         return [(self._guess, 1.0)]

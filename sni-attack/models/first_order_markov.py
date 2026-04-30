@@ -9,21 +9,7 @@ import pickle
 from pathlib import Path
 from typing import Any, Iterable, Mapping
 
-
-def _sessions_ordered(rows: Iterable[Mapping[str, Any]]) -> list[list[dict[str, Any]]]:
-    """Group flat training rows into sessions, hops sorted by hop then timestamp."""
-    by_sid: dict[int, list[dict[str, Any]]] = {}
-    for row in rows:
-        sid = int(row["session_id"])
-        by_sid.setdefault(sid, []).append(dict(row))
-    for sid in by_sid:
-        by_sid[sid].sort(
-            key=lambda r: (
-                int(r["hop"]),
-                float(r["timestamp"]) if r.get("timestamp") not in (None, "") else 0.0,
-            )
-        )
-    return [by_sid[k] for k in sorted(by_sid.keys())]
+from models.model_helper import last_sni, sessions_ordered
 
 
 class FirstOrderMarkov:
@@ -38,7 +24,7 @@ class FirstOrderMarkov:
         ``timestamp``, ``sni``; ``persona`` ignored).
         """
         self._counts.clear()
-        for session in _sessions_ordered(rows):
+        for session in sessions_ordered(rows):
             for i in range(len(session) - 1):
                 a = str(session[i]["sni"]).strip()
                 b = str(session[i + 1]["sni"]).strip()
@@ -48,32 +34,6 @@ class FirstOrderMarkov:
                     self._counts[a] = {}
                 self._counts[a][b] = self._counts[a].get(b, 0) + 1
         return self
-
-    @staticmethod
-    def _order_session_rows(rows: list[Mapping[str, Any]]) -> list[Mapping[str, Any]]:
-        """Same hop ordering rule as ``PopularClassifier``."""
-        if not rows:
-            return rows
-        if not any("hop" in r for r in rows):
-            return list(rows)
-
-        def sort_key(r: Mapping[str, Any]) -> tuple[int, float]:
-            hop = int(r["hop"]) if "hop" in r else 0
-            ts = r.get("timestamp", 0)
-            try:
-                tsf = float(ts)
-            except (TypeError, ValueError):
-                tsf = 0.0
-            return hop, tsf
-
-        return sorted(rows, key=sort_key)
-
-    def _last_sni(self, rows: Iterable[Mapping[str, Any]]) -> str | None:
-        ordered = self._order_session_rows(list(rows))
-        if not ordered:
-            return None
-        last = str(ordered[-1].get("sni", "")).strip()
-        return last or None
 
     def next_probabilities(self, current_sni: str) -> dict[str, float]:
         """
@@ -101,7 +61,7 @@ class FirstOrderMarkov:
         distribution over next SNIs as ``(next_sni, probability)`` pairs, sorted
         by descending probability. Empty list if the current state is unknown.
         """
-        cur = self._last_sni(rows)
+        cur = last_sni(rows)
         if cur is None:
             return []
         return self.next_probabilities_list(cur)

@@ -10,6 +10,8 @@ from collections import Counter
 from pathlib import Path
 from typing import Any, Iterable, Mapping, Optional
 
+from models.model_helper import order_session_rows
+
 
 class MostCommonClassifier:
     def __init__(self) -> None:
@@ -51,32 +53,13 @@ class MostCommonClassifier:
         """The constant persona returned by ``predict`` (``None`` if untrained)."""
         return self._guess
 
-    @staticmethod
-    def _order_session_rows(rows: list[Mapping[str, Any]]) -> list[Mapping[str, Any]]:
-        """Same hop ordering as ``PopularClassifier``."""
-        if not rows:
-            return rows
-        if not any("hop" in r for r in rows):
-            return list(rows)
-
-        def sort_key(r: Mapping[str, Any]) -> tuple[int, float]:
-            hop = int(r["hop"]) if "hop" in r else 0
-            ts = r.get("timestamp", 0)
-            try:
-                tsf = float(ts)
-            except (TypeError, ValueError):
-                tsf = 0.0
-            return hop, tsf
-
-        return sorted(rows, key=sort_key)
-
     def predict(self, rows: Iterable[Mapping[str, Any]]) -> Optional[str]:
         """
         Same row input as ``fit`` (one session). ``persona`` and ``sni`` are
         ignored; returns the training mode persona, or ``None`` if empty input
         or no persona was learned.
         """
-        ordered = self._order_session_rows(list(rows))
+        ordered = order_session_rows(list(rows))
         if not ordered:
             return None
         return self._guess

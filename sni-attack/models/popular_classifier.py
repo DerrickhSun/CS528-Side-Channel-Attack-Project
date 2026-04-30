@@ -10,6 +10,8 @@ from collections import Counter
 from pathlib import Path
 from typing import Any, Iterable, Mapping, Optional
 
+from models.model_helper import order_session_rows
+
 
 class PopularClassifier:
     def __init__(self) -> None:
@@ -31,25 +33,6 @@ class PopularClassifier:
                 self._counts[sni] = {}
             self._counts[sni][persona] = self._counts[sni].get(persona, 0) + 1
         return self
-
-    @staticmethod
-    def _order_session_rows(rows: list[Mapping[str, Any]]) -> list[Mapping[str, Any]]:
-        """Hop order when any row has ``hop``; otherwise preserve iteration order."""
-        if not rows:
-            return rows
-        if not any("hop" in r for r in rows):
-            return list(rows)
-
-        def sort_key(r: Mapping[str, Any]) -> tuple[int, float]:
-            hop = int(r["hop"]) if "hop" in r else 0
-            ts = r.get("timestamp", 0)
-            try:
-                tsf = float(ts)
-            except (TypeError, ValueError):
-                tsf = 0.0
-            return hop, tsf
-
-        return sorted(rows, key=sort_key)
 
     def dominant_persona_for_sni(self, sni: str) -> Optional[str]:
         """Persona with the highest training count for this SNI; None if unseen."""
@@ -82,7 +65,7 @@ class PopularClassifier:
         iteration order of ``rows``.
         """
         as_list = list(rows)
-        ordered = self._order_session_rows(as_list)
+        ordered = order_session_rows(as_list)
         snis = [str(r["sni"]).strip() for r in ordered if str(r.get("sni", "")).strip()]
         return self._predict_from_snis(snis)
 

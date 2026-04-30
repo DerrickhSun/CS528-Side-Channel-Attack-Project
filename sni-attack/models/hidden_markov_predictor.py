@@ -21,7 +21,7 @@ import pickle
 from pathlib import Path
 from typing import Any, Iterable, Literal, Mapping
 
-from models.first_order_markov import _sessions_ordered
+from models.model_helper import order_session_rows, sessions_ordered
 
 
 class HiddenMarkovPredictor:
@@ -30,6 +30,7 @@ class HiddenMarkovPredictor:
         alpha: float = 1.0,
         prediction_target: Literal["next_site", "persona"] = "next_site",
     ) -> None:
+        """Initialize smoothing and output mode before calling ``fit``."""
         if prediction_target not in {"next_site", "persona"}:
             raise ValueError("prediction_target must be 'next_site' or 'persona'")
         self.alpha = float(alpha)
@@ -41,26 +42,10 @@ class HiddenMarkovPredictor:
         self._emit_prob: dict[str, dict[str, float]] = {}
         self._emit_default: dict[str, float] = {}
 
-    @staticmethod
-    def _order_session_rows(rows: list[Mapping[str, Any]]) -> list[Mapping[str, Any]]:
-        if not rows:
-            return rows
-        if not any("hop" in r for r in rows):
-            return list(rows)
-
-        def sort_key(r: Mapping[str, Any]) -> tuple[int, float]:
-            hop = int(r["hop"]) if "hop" in r else 0
-            ts = r.get("timestamp", 0)
-            try:
-                tsf = float(ts)
-            except (TypeError, ValueError):
-                tsf = 0.0
-            return hop, tsf
-
-        return sorted(rows, key=sort_key)
-
     def fit(self, rows: Iterable[Mapping[str, Any]]) -> HiddenMarkovPredictor:
-        sessions = _sessions_ordered(rows)
+        """Train HMM parameters from session rows and return ``self`` for chaining."""
+        sessions = sessions_ordered(rows)
+        # Build vocabularies from training data.
         personas = sorted(
             {
                 str(r.get("persona", "")).strip()
@@ -80,17 +65,23 @@ class HiddenMarkovPredictor:
         self._personas = personas
         self._snis = snis
         if not personas:
+            # Keep model in a known-empty state when there is no label support.
             self._start_prob = {}
             self._trans_prob = {}
             self._emit_prob = {}
             self._emit_default = {}
             return self
 
+        # Raw count tables before smoothing.
         start_counts = {p: 0 for p in personas}
         trans_counts = {p: {q: 0 for q in personas} for p in personas}
         emit_counts = {p: {s: 0 for s in snis} for p in personas}
         emit_totals = {p: 0 for p in personas}
 
+        # Accumulate:
+        # - start persona counts
+        # - persona->persona transition counts
+        # - persona emission counts over observed SNIs
         for sess in sessions:
             if not sess:
                 continue
@@ -112,11 +103,13 @@ class HiddenMarkovPredictor:
         v = len(snis)
         alpha = self.alpha
 
+        # P(start persona), Laplace-smoothed.
         total_start = sum(start_counts.values()) + alpha * k
         self._start_prob = {
             p: (start_counts[p] + alpha) / total_start for p in personas
         }
 
+        # P(next persona | current persona), Laplace-smoothed per source persona.
         self._trans_prob = {}
         for p in personas:
             row_total = sum(trans_counts[p].values()) + alpha * k
@@ -124,6 +117,7 @@ class HiddenMarkovPredictor:
                 q: (trans_counts[p][q] + alpha) / row_total for q in personas
             }
 
+        # P(sni | persona), Laplace-smoothed with an extra unknown-token bucket.
         self._emit_prob = {}
         self._emit_default = {}
         for p in personas:
@@ -133,12 +127,14 @@ class HiddenMarkovPredictor:
         return self
 
     def _emission(self, persona: str, sni: str) -> float:
+        """Return ``P(sni | persona)`` with unknown-SNI fallback smoothing."""
         row = self._emit_prob.get(persona)
         if not row:
             return 0.0
         return row.get(sni, self._emit_default.get(persona, 0.0))
 
     def _normalize(self, dist: dict[str, float]) -> dict[str, float]:
+        """Normalize scores to a probability distribution (uniform fallback if zero-sum)."""
         z = sum(dist.values())
         if z <= 0:
             if not self._personas:
@@ -148,6 +144,7 @@ class HiddenMarkovPredictor:
         return {k: v / z for k, v in dist.items()}
 
     def _persona_posterior(self, observed_snis: list[str]) -> dict[str, float]:
+        """Run HMM filtering to get posterior over current persona after observations."""
         if not self._personas:
             return {}
         if not observed_snis:
@@ -171,6 +168,7 @@ class HiddenMarkovPredictor:
         return belief
 
     def _next_persona_distribution(self, current_posterior: dict[str, float]) -> dict[str, float]:
+        """Project one transition step: ``P(persona_t+1)`` from current posterior."""
         if not self._personas:
             return {}
         nxt = {
@@ -185,7 +183,8 @@ class HiddenMarkovPredictor:
     def _predict_persona_distribution(
         self, rows: Iterable[Mapping[str, Any]]
     ) -> list[tuple[str, float]]:
-        ordered = self._order_session_rows(list(rows))
+        """Rank likely next personas for a session prefix as ``(persona, prob)``."""
+        ordered = order_session_rows(list(rows))
         observed = [
             str(r.get("sni", "")).strip() for r in ordered if str(r.get("sni", "")).strip()
         ]
@@ -201,13 +200,15 @@ class HiddenMarkovPredictor:
         return sorted(next_persona.items(), key=lambda x: (-x[1], x[0]))
 
     def predict_persona(self, rows: Iterable[Mapping[str, Any]]) -> str | None:
+        """Convenience wrapper returning only the top-1 predicted persona label."""
         ranked = self._predict_persona_distribution(rows)
         return ranked[0][0] if ranked else None
 
     def _predict_next_site_distribution(
         self, rows: Iterable[Mapping[str, Any]]
     ) -> list[tuple[str, float]]:
-        ordered = self._order_session_rows(list(rows))
+        """Rank likely next SNIs for a session prefix as ``(sni, prob)``."""
+        ordered = order_session_rows(list(rows))
         observed = [str(r.get("sni", "")).strip() for r in ordered if str(r.get("sni", "")).strip()]
         if not observed or not self._personas or not self._snis:
             return []
@@ -227,6 +228,7 @@ class HiddenMarkovPredictor:
         return sorted(dist.items(), key=lambda x: (-x[1], x[0]))
 
     def predict(self, rows: Iterable[Mapping[str, Any]]) -> list[tuple[str, float]]:
+        """Public prediction API; output type follows ``prediction_target`` mode."""
         if self.prediction_target == "persona":
             return self._predict_persona_distribution(rows)
         return self._predict_next_site_distribution(rows)
@@ -239,9 +241,11 @@ class HiddenMarkovPredictor:
         return {}
 
     def next_probabilities_list(self, _current_sni: str) -> list[tuple[str, float]]:
+        """Compatibility stub mirroring ``next_probabilities`` in list form."""
         return []
 
     def save(self, path: str | Path) -> None:
+        """Persist learned parameters to a pickle file."""
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
         with open(path, "wb") as f:
@@ -261,6 +265,7 @@ class HiddenMarkovPredictor:
 
     @classmethod
     def load(cls, path: str | Path) -> HiddenMarkovPredictor:
+        """Load a saved predictor from pickle and return the reconstructed model."""
         with open(path, "rb") as f:
             data = pickle.load(f)
         obj = cls(

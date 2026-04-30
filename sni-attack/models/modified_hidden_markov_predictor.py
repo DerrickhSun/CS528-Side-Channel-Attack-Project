@@ -21,7 +21,7 @@ import pickle
 from pathlib import Path
 from typing import Any, Iterable, Literal, Mapping
 
-from models.first_order_markov import _sessions_ordered
+from models.model_helper import order_session_rows, sessions_ordered
 
 
 class ModifiedHiddenMarkovPredictor:
@@ -56,26 +56,8 @@ class ModifiedHiddenMarkovPredictor:
         self._emit_site_marginal_prob: dict[str, dict[str, float]] = {}
         self._emit_site_marginal_default: dict[str, float] = {}
 
-    @staticmethod
-    def _order_session_rows(rows: list[Mapping[str, Any]]) -> list[Mapping[str, Any]]:
-        if not rows:
-            return rows
-        if not any("hop" in r for r in rows):
-            return list(rows)
-
-        def sort_key(r: Mapping[str, Any]) -> tuple[int, float]:
-            hop = int(r["hop"]) if "hop" in r else 0
-            ts = r.get("timestamp", 0)
-            try:
-                tsf = float(ts)
-            except (TypeError, ValueError):
-                tsf = 0.0
-            return hop, tsf
-
-        return sorted(rows, key=sort_key)
-
     def fit(self, rows: Iterable[Mapping[str, Any]]) -> ModifiedHiddenMarkovPredictor:
-        sessions = _sessions_ordered(rows)
+        sessions = sessions_ordered(rows)
         personas = sorted(
             {
                 str(r.get("persona", "")).strip()
@@ -302,7 +284,7 @@ class ModifiedHiddenMarkovPredictor:
     def _predict_persona_distribution(
         self, rows: Iterable[Mapping[str, Any]]
     ) -> list[tuple[str, float]]:
-        ordered = self._order_session_rows(list(rows))
+        ordered = order_session_rows(list(rows))
         observed = [
             str(r.get("sni", "")).strip()
             for r in ordered
@@ -330,7 +312,7 @@ class ModifiedHiddenMarkovPredictor:
     def _predict_next_site_distribution(
         self, rows: Iterable[Mapping[str, Any]]
     ) -> list[tuple[str, float]]:
-        ordered = self._order_session_rows(list(rows))
+        ordered = order_session_rows(list(rows))
         observed = [
             str(r.get("sni", "")).strip()
             for r in ordered

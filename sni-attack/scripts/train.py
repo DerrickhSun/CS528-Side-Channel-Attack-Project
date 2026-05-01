@@ -1,15 +1,16 @@
+#!/usr/bin/env python3
 """
 Train a selected model on sessions.csv (and related artifacts).
 Add new trainers by defining a function and registering it in TRAINERS.
-"""
 
-from __future__ import annotations
+Requires Python 3.8+ (not Python 2). Run as::
+
+    python3 scripts/train.py popular
+"""
 
 import argparse
 import sys
-from collections.abc import Callable
 from pathlib import Path
-from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
 SCRIPTS = Path(__file__).resolve().parent
@@ -25,13 +26,32 @@ from models.most_common_predictor import MostCommonPredictor
 from models.popular_classifier import PopularClassifier
 
 from input_processing import iter_sessions, load_session_rows
+from live_model_json_spec import export_trained_model_to_json
 
 DATA_DIR = ROOT / "data"
 MODELS_DIR = ROOT / "models"
 
+
+class TrainOpts:
+    """CLI-adjustable training options (see ``main``)."""
+
+    write_live_json = True
+
+
+opts = TrainOpts()
+
+
+def _maybe_export_live_json(model_obj, pkl_path):
+    """Write portable JSON next to ``*.pkl`` for ``attack.py`` on Python 2.7."""
+    if not opts.write_live_json:
+        return
+    json_path = pkl_path.with_suffix(".json")
+    export_trained_model_to_json(model_obj, json_path)
+    print(f"Saved {json_path}")
+
 # Persona classifiers vs next-hop / sequence models — extend when adding trainers.
-CLASSIFIER_MODELS: frozenset[str] = frozenset({"popular", "most_common_classifier"})
-NEXT_SITE_MODELS: frozenset[str] = frozenset(
+CLASSIFIER_MODELS = frozenset({"popular", "most_common_classifier"})
+NEXT_SITE_MODELS = frozenset(
     {
         "markov",
         "first_order_markov",
@@ -42,10 +62,7 @@ NEXT_SITE_MODELS: frozenset[str] = frozenset(
 )
 
 
-def session_accuracy_classifier(
-    clf: Any,
-    rows_path: Path,
-) -> tuple[int, int, float]:
+def session_accuracy_classifier(clf, rows_path):
     """Returns (correct, total_sessions_with_prediction, accuracy)."""
     rows = load_session_rows(rows_path)
     correct = 0
@@ -62,7 +79,7 @@ def session_accuracy_classifier(
     return correct, total, acc
 
 
-def train_popular() -> None:
+def train_popular():
     """SNI vote / co-occurrence persona classifier → popular_classifier.pkl"""
     sessions_csv = DATA_DIR / "sessions.csv"
     if not sessions_csv.is_file():
@@ -74,6 +91,7 @@ def train_popular() -> None:
     out_path = MODELS_DIR / "popular_classifier.pkl"
     clf.save(out_path)
     print(f"Saved {out_path}")
+    _maybe_export_live_json(clf, out_path)
 
     c, n, acc = session_accuracy_classifier(clf, sessions_csv)
     print(f"sessions.csv: {c}/{n} sessions correct ({acc:.1%})")
@@ -84,7 +102,7 @@ def train_popular() -> None:
         print(f"demo.csv:     {c2}/{n2} sessions correct ({acc2:.1%})")
 
 
-def train_markov() -> None:
+def train_markov():
     """First-order SNI transition model → markov.pkl"""
     sessions_csv = DATA_DIR / "sessions.csv"
     if not sessions_csv.is_file():
@@ -96,6 +114,7 @@ def train_markov() -> None:
     out_path = MODELS_DIR / "markov.pkl"
     m.save(out_path)
     print(f"Saved {out_path}")
+    _maybe_export_live_json(m, out_path)
 
     # Quick sanity: show next-site distribution from one common tail state
     sample = "paypal.com"
@@ -107,7 +126,7 @@ def train_markov() -> None:
         print(f"No outgoing transitions from {sample!r} in training.")
 
 
-def train_most_common_predictor() -> None:
+def train_most_common_predictor():
     """Global most-frequent next SNI baseline → most_common_predictor.pkl"""
     sessions_csv = DATA_DIR / "sessions.csv"
     if not sessions_csv.is_file():
@@ -119,6 +138,7 @@ def train_most_common_predictor() -> None:
     out_path = MODELS_DIR / "most_common_predictor.pkl"
     p.save(out_path)
     print(f"Saved {out_path}")
+    _maybe_export_live_json(p, out_path)
     g = p.most_common_next()
     if g:
         n = p.next_target_counts().get(g, 0)
@@ -127,7 +147,7 @@ def train_most_common_predictor() -> None:
         print("No transitions in training; model has no guess.")
 
 
-def train_hidden_markov_predictor() -> None:
+def train_hidden_markov_predictor():
     """Persona-transition HMM-style next-site predictor → hidden_markov_predictor.pkl"""
     sessions_csv = DATA_DIR / "sessions.csv"
     if not sessions_csv.is_file():
@@ -139,6 +159,7 @@ def train_hidden_markov_predictor() -> None:
     out_path = MODELS_DIR / "hidden_markov_predictor.pkl"
     m.save(out_path)
     print(f"Saved {out_path}")
+    _maybe_export_live_json(m, out_path)
 
     # Example next-site distribution from an early session prefix
     first_session = next(iter_sessions(rows))[1]
@@ -151,7 +172,7 @@ def train_hidden_markov_predictor() -> None:
         print("No HMM prediction available for sample prefix.")
 
 
-def train_modified_hidden_markov_predictor() -> None:
+def train_modified_hidden_markov_predictor():
     """Observation-conditioned HMM next-site predictor → modified_hidden_markov_predictor.pkl"""
     sessions_csv = DATA_DIR / "sessions.csv"
     if not sessions_csv.is_file():
@@ -163,6 +184,7 @@ def train_modified_hidden_markov_predictor() -> None:
     out_path = MODELS_DIR / "modified_hidden_markov_predictor.pkl"
     m.save(out_path)
     print(f"Saved {out_path}")
+    _maybe_export_live_json(m, out_path)
 
     # Example next-site distribution from an early session prefix
     first_session = next(iter_sessions(rows))[1]
@@ -178,7 +200,7 @@ def train_modified_hidden_markov_predictor() -> None:
         print("No modified-HMM prediction available for sample prefix.")
 
 
-def train_most_common_classifier() -> None:
+def train_most_common_classifier():
     """Majority-session persona baseline → most_common_classifier.pkl"""
     sessions_csv = DATA_DIR / "sessions.csv"
     if not sessions_csv.is_file():
@@ -190,6 +212,7 @@ def train_most_common_classifier() -> None:
     out_path = MODELS_DIR / "most_common_classifier.pkl"
     clf.save(out_path)
     print(f"Saved {out_path}")
+    _maybe_export_live_json(clf, out_path)
     g = clf.most_common_persona()
     if g:
         print(f"Always predicts persona = {g!r}")
@@ -206,7 +229,7 @@ def train_most_common_classifier() -> None:
 
 
 # Register each trainable model: name shown on CLI -> no-arg trainer
-TRAINERS: dict[str, Callable[[], None]] = {
+TRAINERS = {
     "first_order_markov": train_markov,
     "markov": train_markov,
     "most_common_classifier": train_most_common_classifier,
@@ -217,7 +240,7 @@ TRAINERS: dict[str, Callable[[], None]] = {
 }
 
 
-def main() -> None:
+def main():
     parser = argparse.ArgumentParser(
         description=(
             "Train a model from data/sessions.csv. "
@@ -234,7 +257,13 @@ def main() -> None:
         metavar="MODEL",
         help="which model to train (%s)" % ", ".join(sorted(TRAINERS.keys())),
     )
+    parser.add_argument(
+        "--no-json",
+        action="store_true",
+        help="Skip writing sibling .json next to each .pkl (attack.py portable format)",
+    )
     args = parser.parse_args()
+    opts.write_live_json = not args.no_json
     TRAINERS[args.model]()
 
 

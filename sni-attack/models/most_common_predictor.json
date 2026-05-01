@@ -1,0 +1,33 @@
+{
+  "format_version": 1,
+  "model_type": "most_common_predictor",
+  "next_site_counts": {
+    "amazon.com": 50,
+    "apnews.com": 9,
+    "bbc.com": 44,
+    "bestbuy.com": 14,
+    "cnn.com": 31,
+    "craigslist.org": 5,
+    "ebay.com": 30,
+    "edstem.org": 26,
+    "etsy.com": 2,
+    "foxnews.com": 7,
+    "google.com": 23,
+    "gradescope.com": 27,
+    "lib.purdue.edu": 10,
+    "mail.purdue.edu": 15,
+    "mypurdue.purdue.edu": 9,
+    "nytimes.com": 31,
+    "paypal.com": 46,
+    "piazza.com": 27,
+    "purdue.brightspace.com": 26,
+    "purdue.edu": 24,
+    "reddit.com": 49,
+    "reuters.com": 30,
+    "target.com": 15,
+    "theguardian.com": 23,
+    "venmo.com": 11,
+    "vocareum.com": 11,
+    "walmart.com": 18
+  }
+}

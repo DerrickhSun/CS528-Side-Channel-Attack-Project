@@ -1,0 +1,91 @@
+{
+  "counts": {
+    "amazon.com": {
+      "shopper": 72
+    },
+    "apnews.com": {
+      "news_reader": 9
+    },
+    "bbc.com": {
+      "news_reader": 54
+    },
+    "bestbuy.com": {
+      "shopper": 14
+    },
+    "cnn.com": {
+      "news_reader": 46
+    },
+    "craigslist.org": {
+      "shopper": 5
+    },
+    "ebay.com": {
+      "shopper": 42
+    },
+    "edstem.org": {
+      "student": 26
+    },
+    "etsy.com": {
+      "shopper": 2
+    },
+    "foxnews.com": {
+      "news_reader": 7
+    },
+    "google.com": {
+      "news_reader": 33,
+      "shopper": 27,
+      "student": 28
+    },
+    "gradescope.com": {
+      "student": 27
+    },
+    "lib.purdue.edu": {
+      "student": 10
+    },
+    "mail.purdue.edu": {
+      "student": 25
+    },
+    "mypurdue.purdue.edu": {
+      "student": 9
+    },
+    "nytimes.com": {
+      "news_reader": 31
+    },
+    "paypal.com": {
+      "shopper": 46
+    },
+    "piazza.com": {
+      "student": 27
+    },
+    "purdue.brightspace.com": {
+      "student": 26
+    },
+    "purdue.edu": {
+      "student": 40
+    },
+    "reddit.com": {
+      "news_reader": 25,
+      "shopper": 1,
+      "student": 23
+    },
+    "reuters.com": {
+      "news_reader": 30
+    },
+    "target.com": {
+      "shopper": 15
+    },
+    "theguardian.com": {
+      "news_reader": 23
+    },
+    "venmo.com": {
+      "shopper": 11
+    },
+    "vocareum.com": {
+      "student": 11
+    },
+    "walmart.com": {
+      "shopper": 18
+    }
+  },
+  "format_version": 1,
+  "model_type": "popular_classifier"
+}

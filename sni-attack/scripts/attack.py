@@ -12,9 +12,17 @@ Python 2.7 compatible (Ubuntu 12.04).
 Usage (run from scripts/):
     sudo python attack.py
 
-Optional (Python 3 + trained pickles from ``train.py``):
-    sudo python3 attack.py --classifier-pkl ../models/popular_classifier.pkl \\
-        --predictor-pkl ../models/markov.pkl --interface eth0
+Optional trained models from ``train.py``:
+
+- Pickles (Python 3 interpreter recommended):
+
+      sudo python3 attack.py --classifier-pkl ../models/popular_classifier.pkl \\
+          --predictor-pkl ../models/markov.pkl --interface eth0
+
+- JSON exports (Python 2.7 OK — run ``scripts/export_live_json.py`` once on Python 3):
+
+      sudo python attack.py --classifier-pkl ../models/popular_classifier.json \\
+          --predictor-pkl ../models/markov.json --interface eth0
 
 When ``--classifier-pkl`` / ``--predictor-pkl`` are omitted, behavior matches
 the original hardcoded CLASSIFIER / MARKOV tables.
@@ -191,13 +199,53 @@ def _session_rows(session_id, snis, timestamps):
     return rows
 
 
-def _load_classifier_pickle(path):
-    """Load a persona classifier from ``train.py`` output (requires Python 3)."""
+def _load_classifier_json(path):
+    """Load classifier from JSON (stdlib only; Python 2.7 + 3.x)."""
     global _LIVE_CLASSIFIER
+    import io
+    import json
+
+    import live_json_models
+
+    with io.open(path, "r", encoding="utf-8") as f:
+        spec = json.load(f)
+    try:
+        _LIVE_CLASSIFIER = live_json_models.build_classifier(spec)
+    except ValueError as exc:
+        sys.stderr.write("[attack.py] Classifier JSON: %s\n" % exc)
+        sys.exit(1)
+
+
+def _load_predictor_json(path):
+    """Load next-site predictor from JSON (stdlib only; Python 2.7 + 3.x)."""
+    global _LIVE_PREDICTOR
+    import io
+    import json
+
+    import live_json_models
+
+    with io.open(path, "r", encoding="utf-8") as f:
+        spec = json.load(f)
+    try:
+        _LIVE_PREDICTOR = live_json_models.build_predictor(spec)
+    except ValueError as exc:
+        sys.stderr.write("[attack.py] Predictor JSON: %s\n" % exc)
+        sys.exit(1)
+
+
+def _load_classifier_pickle(path):
+    """Load a persona classifier from ``train.py`` output (.pkl needs Python 3)."""
+    global _LIVE_CLASSIFIER
+    path = os.path.abspath(path)
+    if path.lower().endswith(".json"):
+        _load_classifier_json(path)
+        return
     if sys.version_info[0] < 3:
         sys.stderr.write(
             "[attack.py] Loading classifier .pkl requires Python 3 "
-            "(same as ``scripts/train.py``).\n"
+            "(same as ``scripts/train.py``). "
+            "Or export JSON: python3 scripts/export_live_json.py <file.pkl> "
+            "and pass the resulting .json with --classifier-pkl.\n"
         )
         sys.exit(1)
     if _ROOT_DIR not in sys.path:
@@ -219,12 +267,18 @@ def _load_classifier_pickle(path):
 
 
 def _load_predictor_pickle(path):
-    """Load a next-site predictor from ``train.py`` output (requires Python 3)."""
+    """Load a next-site predictor from ``train.py`` output (.pkl needs Python 3)."""
     global _LIVE_PREDICTOR
+    path = os.path.abspath(path)
+    if path.lower().endswith(".json"):
+        _load_predictor_json(path)
+        return
     if sys.version_info[0] < 3:
         sys.stderr.write(
             "[attack.py] Loading predictor .pkl requires Python 3 "
-            "(same as ``scripts/train.py``).\n"
+            "(same as ``scripts/train.py``). "
+            "Or export JSON: python3 scripts/export_live_json.py <file.pkl> "
+            "and pass the resulting .json with --predictor-pkl.\n"
         )
         sys.exit(1)
     if _ROOT_DIR not in sys.path:
@@ -479,13 +533,13 @@ def _parse_cli():
         "--classifier-pkl",
         default=None,
         metavar="PATH",
-        help="Optional path to popular_classifier.pkl or most_common_classifier.pkl",
+        help="Path to popular_classifier.pkl/.json or most_common_classifier.pkl/.json",
     )
     p.add_argument(
         "--predictor-pkl",
         default=None,
         metavar="PATH",
-        help="Optional path to markov.pkl, most_common_predictor.pkl, or HMM pkls",
+        help="Path to markov.pkl/.json, most_common_predictor, HMM pkls/json",
     )
     return p.parse_args()
 

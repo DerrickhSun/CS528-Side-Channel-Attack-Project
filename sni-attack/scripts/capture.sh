@@ -9,7 +9,7 @@
 #   captured_sni.csv    — parsed timestamp,sni rows
 #
 # Stop: Ctrl-C (the parser runs automatically on exit)
-
+# From vitctim run "curl https://google.com" 
 # --- Config -----------------------------------------------------------
 
 INTERFACE="eth14"

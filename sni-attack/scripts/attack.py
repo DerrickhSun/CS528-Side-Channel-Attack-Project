@@ -66,11 +66,16 @@ _LIVE_PREDICTOR = None
 
 # SNIs that appear across all personas and carry no discriminative signal.
 # The classifier ignores these when voting.
+# Confirmed by trained popular_classifier.pkl:
+#   google.com  -- student: 28, news_reader: 33, shopper: 27  (nearly uniform)
+#   reddit.com  -- student: 23, news_reader: 25, shopper: 1   (too mixed to use)
 SHARED = {'google.com', 'reddit.com'}
 
 # Maps each persona-exclusive SNI to its persona label.
 # Every SNI the victim visits gets looked up here. If it's exclusive to one
 # persona, it casts a vote for that persona in the classifier.
+# All mappings confirmed by trained popular_classifier.pkl -- every SNI below
+# appears exclusively under one persona in the training data.
 CLASSIFIER = {
     # student -- Purdue academic sites
     'purdue.edu':               'student',
@@ -108,53 +113,53 @@ CLASSIFIER = {
 # Structure: {persona: {current_sni: {next_sni: probability}}}
 #
 # Each inner dict is a probability distribution over the next SNI given the
-# current one. Values sum to 1.0 per row. These were set by hand to reflect
-# realistic browsing patterns (e.g. amazon -> paypal is a natural checkout flow).
+# current one. Values sum to ~1.0 per row.
 #
-# If the current SNI has no row in the table (e.g. it was not seen often during
+# These probabilities were derived from the trained markov.pkl model
+# (first_order_markov.py). Raw transition counts were extracted from the pkl,
+# filtered to each persona's exclusive SNI vocabulary (shared SNIs like
+# google.com and reddit.com were excluded from destination sets so they don't
+# dilute persona-specific predictions), then normalized to sum to 1.0.
+#
+# Example derivation for purdue.edu:
+#   Raw counts: brightspace=18, mail=10, mypurdue=7, lib=3  (total=38)
+#   Probabilities: 18/38=0.47, 10/38=0.26, 7/38=0.18, 3/38=0.08
+#
+# If the current SNI has no row in the table (e.g. it was not seen during
 # training), the predictor falls back to a flat uniform distribution over all
 # SNIs in that persona's vocabulary.
 MARKOV = {
     'student': {
-        # From the main portal, students typically go to their LMS or email
-        'purdue.edu':             {'purdue.brightspace.com': 0.40, 'mail.purdue.edu': 0.25, 'mypurdue.purdue.edu': 0.20, 'lib.purdue.edu': 0.15},
-        # From email, grading and coursework tools are the likely next stop
-        'mail.purdue.edu':        {'gradescope.com': 0.40, 'purdue.brightspace.com': 0.30, 'purdue.edu': 0.20, 'piazza.com': 0.10},
-        # From Brightspace (LMS), students go to coding/Q&A platforms
-        'purdue.brightspace.com': {'edstem.org': 0.35, 'gradescope.com': 0.30, 'piazza.com': 0.20, 'vocareum.com': 0.15},
-        # From edstem, the natural next step is the cloud lab (vocareum) or Q&A
-        'edstem.org':             {'vocareum.com': 0.50, 'piazza.com': 0.25, 'purdue.brightspace.com': 0.25},
-        'gradescope.com':         {'purdue.brightspace.com': 0.45, 'edstem.org': 0.30, 'piazza.com': 0.25},
-        'piazza.com':             {'purdue.brightspace.com': 0.40, 'edstem.org': 0.35, 'gradescope.com': 0.25},
-        'vocareum.com':           {'edstem.org': 0.55, 'purdue.brightspace.com': 0.30, 'gradescope.com': 0.15},
-        'mypurdue.purdue.edu':    {'purdue.brightspace.com': 0.50, 'mail.purdue.edu': 0.30, 'purdue.edu': 0.20},
-        'lib.purdue.edu':         {'purdue.edu': 0.45, 'purdue.brightspace.com': 0.35, 'edstem.org': 0.20},
+        'purdue.edu':             {'purdue.brightspace.com': 0.47, 'mail.purdue.edu': 0.26, 'mypurdue.purdue.edu': 0.18, 'lib.purdue.edu': 0.08},
+        'mail.purdue.edu':        {'gradescope.com': 0.38, 'piazza.com': 0.29, 'purdue.brightspace.com': 0.19, 'edstem.org': 0.14},
+        'purdue.brightspace.com': {'piazza.com': 0.55, 'edstem.org': 0.32, 'gradescope.com': 0.14},
+        'piazza.com':             {'gradescope.com': 0.42, 'edstem.org': 0.42, 'purdue.brightspace.com': 0.16},
+        'gradescope.com':         {'edstem.org': 0.33, 'piazza.com': 0.33, 'vocareum.com': 0.33},
+        'edstem.org':             {'vocareum.com': 0.46, 'gradescope.com': 0.38, 'piazza.com': 0.15},
+        'vocareum.com':           {'gradescope.com': 0.50, 'edstem.org': 0.50},
+        'lib.purdue.edu':         {'purdue.edu': 0.50, 'mypurdue.purdue.edu': 0.50},
+        'mypurdue.purdue.edu':    {'mail.purdue.edu': 0.43, 'purdue.edu': 0.43, 'purdue.brightspace.com': 0.14},
     },
     'shopper': {
-        # Amazon is the hub -- most transitions lead through or back to it
-        'amazon.com':       {'paypal.com': 0.40, 'ebay.com': 0.25, 'walmart.com': 0.20, 'bestbuy.com': 0.15},
-        # eBay sessions often end at a payment processor
-        'ebay.com':         {'paypal.com': 0.50, 'amazon.com': 0.25, 'craigslist.org': 0.15, 'venmo.com': 0.10},
-        # After paying, shoppers return to browse more
-        'paypal.com':       {'amazon.com': 0.40, 'ebay.com': 0.35, 'venmo.com': 0.25},
-        'walmart.com':      {'amazon.com': 0.45, 'target.com': 0.30, 'bestbuy.com': 0.25},
-        'bestbuy.com':      {'amazon.com': 0.50, 'walmart.com': 0.30, 'ebay.com': 0.20},
-        'target.com':       {'amazon.com': 0.45, 'walmart.com': 0.35, 'paypal.com': 0.20},
-        'etsy.com':         {'paypal.com': 0.55, 'amazon.com': 0.25, 'ebay.com': 0.20},
-        'craigslist.org':   {'ebay.com': 0.45, 'paypal.com': 0.35, 'amazon.com': 0.20},
-        'venmo.com':        {'paypal.com': 0.50, 'amazon.com': 0.30, 'ebay.com': 0.20},
+        'amazon.com':       {'paypal.com': 0.37, 'bestbuy.com': 0.23, 'ebay.com': 0.17, 'target.com': 0.13, 'walmart.com': 0.10},
+        'ebay.com':         {'paypal.com': 0.40, 'amazon.com': 0.23, 'venmo.com': 0.20, 'craigslist.org': 0.17},
+        'paypal.com':       {'amazon.com': 0.55, 'ebay.com': 0.31, 'venmo.com': 0.14},
+        'walmart.com':      {'amazon.com': 0.40, 'paypal.com': 0.30, 'target.com': 0.30},
+        'bestbuy.com':      {'amazon.com': 0.46, 'target.com': 0.23, 'paypal.com': 0.15, 'walmart.com': 0.15},
+        'target.com':       {'amazon.com': 0.33, 'paypal.com': 0.33, 'etsy.com': 0.17, 'walmart.com': 0.17},
+        'etsy.com':         {'target.com': 0.50, 'amazon.com': 0.50},
+        'craigslist.org':   {'ebay.com': 0.75, 'venmo.com': 0.25},
+        'venmo.com':        {'paypal.com': 0.50, 'ebay.com': 0.33, 'amazon.com': 0.17},
     },
     'news_reader': {
-        # News readers hop between outlets -- no single dominant next-hop
-        'cnn.com':          {'bbc.com': 0.25, 'nytimes.com': 0.25, 'apnews.com': 0.20, 'foxnews.com': 0.15, 'reuters.com': 0.15},
-        # BBC readers tend toward wire services for more factual follow-up
-        'bbc.com':          {'reuters.com': 0.40, 'theguardian.com': 0.30, 'cnn.com': 0.20, 'apnews.com': 0.10},
-        'nytimes.com':      {'theguardian.com': 0.40, 'reuters.com': 0.25, 'bbc.com': 0.20, 'apnews.com': 0.15},
-        'reuters.com':      {'bbc.com': 0.35, 'apnews.com': 0.30, 'nytimes.com': 0.25, 'cnn.com': 0.10},
-        'apnews.com':       {'reuters.com': 0.35, 'bbc.com': 0.30, 'cnn.com': 0.20, 'nytimes.com': 0.15},
-        'theguardian.com':  {'bbc.com': 0.45, 'reuters.com': 0.30, 'nytimes.com': 0.25},
-        'foxnews.com':      {'cnn.com': 0.40, 'apnews.com': 0.35, 'reuters.com': 0.25},
-        'npr.org':          {'apnews.com': 0.40, 'reuters.com': 0.30, 'bbc.com': 0.30},
+        'cnn.com':          {'bbc.com': 0.50, 'foxnews.com': 0.25, 'nytimes.com': 0.21, 'apnews.com': 0.04},
+        'bbc.com':          {'reuters.com': 0.44, 'theguardian.com': 0.24, 'nytimes.com': 0.18, 'cnn.com': 0.13},
+        'nytimes.com':      {'theguardian.com': 0.60, 'reuters.com': 0.25, 'bbc.com': 0.15},
+        'reuters.com':      {'bbc.com': 0.47, 'apnews.com': 0.27, 'nytimes.com': 0.27},
+        'apnews.com':       {'cnn.com': 0.67, 'bbc.com': 0.17, 'reuters.com': 0.17},
+        'theguardian.com':  {'bbc.com': 0.33, 'reuters.com': 0.33, 'nytimes.com': 0.33},
+        'foxnews.com':      {'apnews.com': 0.80, 'cnn.com': 0.20},
+        'npr.org':          {'apnews.com': 0.40, 'reuters.com': 0.30, 'bbc.com': 0.30},  # manual (no training data)
     },
 }
 

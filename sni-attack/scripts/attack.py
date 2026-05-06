@@ -555,14 +555,7 @@ def _parse_cli():
         "--predictor-pkl",
         default=None,
         metavar="PATH",
-<<<<<<< HEAD
-        help=(
-            "Optional path: .pkl (markov, baselines, HMM) or directory "
-            "models/llm_predictor/ from train.py llm_predictor"
-        ),
-=======
         help="Path to markov.pkl/.json, most_common_predictor, HMM pkls/json",
->>>>>>> 326bf1c74f4ede206cc911127d8876cd0046d5bb
     )
     return p.parse_args()
 

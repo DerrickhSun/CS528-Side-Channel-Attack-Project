@@ -1,0 +1,2 @@
+# Fine-tuned LLM checkpoint (large; train locally with scripts/train.py llm_predictor)
+sni-attack/models/llm_predictor/

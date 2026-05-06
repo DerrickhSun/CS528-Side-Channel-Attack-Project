@@ -1,0 +1,172 @@
+{
+  "counts": {
+    "amazon.com": {
+      "bestbuy.com": 14,
+      "ebay.com": 10,
+      "paypal.com": 22,
+      "target.com": 8,
+      "walmart.com": 6
+    },
+    "apnews.com": {
+      "bbc.com": 1,
+      "cnn.com": 4,
+      "reuters.com": 1
+    },
+    "bbc.com": {
+      "cnn.com": 6,
+      "nytimes.com": 8,
+      "reuters.com": 20,
+      "theguardian.com": 11
+    },
+    "bestbuy.com": {
+      "amazon.com": 6,
+      "paypal.com": 2,
+      "target.com": 3,
+      "walmart.com": 2
+    },
+    "cnn.com": {
+      "apnews.com": 1,
+      "bbc.com": 14,
+      "foxnews.com": 7,
+      "nytimes.com": 6,
+      "reddit.com": 11
+    },
+    "craigslist.org": {
+      "ebay.com": 3,
+      "venmo.com": 1
+    },
+    "ebay.com": {
+      "amazon.com": 7,
+      "craigslist.org": 5,
+      "paypal.com": 12,
+      "venmo.com": 6
+    },
+    "edstem.org": {
+      "gradescope.com": 5,
+      "piazza.com": 2,
+      "reddit.com": 2,
+      "vocareum.com": 6
+    },
+    "etsy.com": {
+      "amazon.com": 1,
+      "target.com": 1
+    },
+    "foxnews.com": {
+      "apnews.com": 4,
+      "cnn.com": 1,
+      "google.com": 1,
+      "reddit.com": 1
+    },
+    "google.com": {
+      "amazon.com": 11,
+      "bbc.com": 8,
+      "cnn.com": 13,
+      "ebay.com": 5,
+      "lib.purdue.edu": 3,
+      "mail.purdue.edu": 2,
+      "nytimes.com": 2,
+      "purdue.edu": 13,
+      "reddit.com": 17,
+      "walmart.com": 8
+    },
+    "gradescope.com": {
+      "edstem.org": 5,
+      "piazza.com": 5,
+      "reddit.com": 4,
+      "vocareum.com": 5
+    },
+    "lib.purdue.edu": {
+      "google.com": 2,
+      "mypurdue.purdue.edu": 2,
+      "purdue.edu": 2
+    },
+    "mail.purdue.edu": {
+      "edstem.org": 3,
+      "gradescope.com": 8,
+      "piazza.com": 6,
+      "purdue.brightspace.com": 4
+    },
+    "mypurdue.purdue.edu": {
+      "mail.purdue.edu": 3,
+      "purdue.brightspace.com": 1,
+      "purdue.edu": 3,
+      "reddit.com": 2
+    },
+    "nytimes.com": {
+      "bbc.com": 3,
+      "reddit.com": 4,
+      "reuters.com": 5,
+      "theguardian.com": 12
+    },
+    "paypal.com": {
+      "amazon.com": 16,
+      "ebay.com": 9,
+      "google.com": 6,
+      "venmo.com": 4
+    },
+    "piazza.com": {
+      "edstem.org": 8,
+      "gradescope.com": 8,
+      "purdue.brightspace.com": 3,
+      "reddit.com": 3
+    },
+    "purdue.brightspace.com": {
+      "edstem.org": 7,
+      "gradescope.com": 3,
+      "piazza.com": 12,
+      "reddit.com": 3
+    },
+    "purdue.edu": {
+      "lib.purdue.edu": 3,
+      "mail.purdue.edu": 10,
+      "mypurdue.purdue.edu": 7,
+      "purdue.brightspace.com": 18
+    },
+    "reddit.com": {
+      "bbc.com": 7,
+      "cnn.com": 7,
+      "ebay.com": 1,
+      "google.com": 4,
+      "lib.purdue.edu": 4,
+      "nytimes.com": 7,
+      "piazza.com": 2,
+      "purdue.edu": 6
+    },
+    "reuters.com": {
+      "apnews.com": 4,
+      "bbc.com": 7,
+      "google.com": 5,
+      "nytimes.com": 4
+    },
+    "target.com": {
+      "amazon.com": 4,
+      "etsy.com": 2,
+      "paypal.com": 4,
+      "walmart.com": 2
+    },
+    "theguardian.com": {
+      "bbc.com": 4,
+      "nytimes.com": 4,
+      "reddit.com": 2,
+      "reuters.com": 4
+    },
+    "venmo.com": {
+      "amazon.com": 1,
+      "ebay.com": 2,
+      "google.com": 1,
+      "paypal.com": 3
+    },
+    "vocareum.com": {
+      "edstem.org": 3,
+      "gradescope.com": 3
+    },
+    "walmart.com": {
+      "amazon.com": 4,
+      "google.com": 4,
+      "paypal.com": 3,
+      "target.com": 3
+    }
+  },
+  "format_version": 1,
+  "model_type": "first_order_markov"
+}

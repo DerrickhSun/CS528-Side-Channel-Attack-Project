@@ -1,0 +1,437 @@
+[04/30/2026 21:33] cs528user@cs528vm:~/sni-attack/scripts$ sudo python attack.py --classifier-pkl ../models/most_common_classifier.json
+[attack.py] Live models: classifier=../models/most_common_classifier.json predictor=(hardcoded)
+[attack.py] Starting live capture on interface eth14
+[attack.py] Waiting for TLS traffic... (Ctrl-C to stop)
+
+
+[SESSION 0]
+  Seen:     purdue.edu
+  Persona:  news_reader (confidence 100%)
+  Predicts: foxnews.com (13%) | reuters.com (13%) | apnews.com (13%)
+  -> ACTION: Prepare fake foxnews.com credential page
+
+[SESSION 0]
+  Seen:     purdue.edu -> purdue.brightspace.com
+  Persona:  news_reader (confidence 100%)
+  Predicts: foxnews.com (13%) | reuters.com (13%) | apnews.com (13%)
+  -> ACTION: Prepare fake foxnews.com credential page
+
+[SESSION 0]
+  Seen:     purdue.edu -> purdue.brightspace.com -> reddit.com
+  Persona:  news_reader (confidence 100%)
+  Predicts: foxnews.com (13%) | reuters.com (13%) | apnews.com (13%)
+  -> ACTION: Prepare fake foxnews.com credential page
+
+[SESSION 0]
+  Seen:     purdue.edu -> purdue.brightspace.com -> reddit.com -> purdue.edu
+  Persona:  news_reader (confidence 100%)
+  Predicts: foxnews.com (13%) | reuters.com (13%) | apnews.com (13%)
+  -> ACTION: Prepare fake foxnews.com credential page
+
+[SESSION 1]
+  Seen:     ebay.com
+  Persona:  news_reader (confidence 100%)
+  Predicts: foxnews.com (13%) | reuters.com (13%) | apnews.com (13%)
+  -> ACTION: Prepare fake foxnews.com credential page
+
+[SESSION 1]
+  Seen:     ebay.com -> paypal.com
+  Persona:  news_reader (confidence 100%)
+  Predicts: foxnews.com (13%) | reuters.com (13%) | apnews.com (13%)
+  -> ACTION: Prepare fake foxnews.com credential page
+
+[SESSION 1]
+  Seen:     ebay.com -> paypal.com -> ebay.com
+  Persona:  news_reader (confidence 100%)
+  Predicts: foxnews.com (13%) | reuters.com (13%) | apnews.com (13%)
+  -> ACTION: Prepare fake foxnews.com credential page
+
+[SESSION 1]
+  Seen:     ebay.com -> paypal.com -> ebay.com -> amazon.com
+  Persona:  news_reader (confidence 100%)
+  Predicts: foxnews.com (13%) | reuters.com (13%) | apnews.com (13%)
+  -> ACTION: Prepare fake foxnews.com credential page
+
+[SESSION 1]
+  Seen:     ebay.com -> paypal.com -> ebay.com -> amazon.com -> paypal.com
+  Persona:  news_reader (confidence 100%)
+  Predicts: foxnews.com (13%) | reuters.com (13%) | apnews.com (13%)
+  -> ACTION: Prepare fake foxnews.com credential page
+
+[SESSION 1]
+  Seen:     ebay.com -> paypal.com -> ebay.com -> amazon.com -> paypal.com -> venmo.com
+  Persona:  news_reader (confidence 100%)
+  Predicts: foxnews.com (13%) | reuters.com (13%) | apnews.com (13%)
+  -> ACTION: Prepare fake foxnews.com credential page
+
+[SESSION 2]
+  Seen:     google.com
+  Persona:  news_reader (confidence 100%)
+  Predicts: foxnews.com (13%) | reuters.com (13%) | apnews.com (13%)
+  -> ACTION: Prepare fake foxnews.com credential page
+
+[SESSION 2]
+  Seen:     google.com -> cnn.com
+  Persona:  news_reader (confidence 100%)
+  Predicts: bbc.com (50%) | foxnews.com (25%) | nytimes.com (21%)
+  -> ACTION: Prepare fake bbc.com credential page
+
+[SESSION 2]
+  Seen:     google.com -> cnn.com -> nytimes.com
+  Persona:  news_reader (confidence 100%)
+  Predicts: theguardian.com (60%) | reuters.com (25%) | bbc.com (15%)
+  -> ACTION: Prepare fake theguardian.com credential page
+
+[SESSION 2]
+  Seen:     google.com -> cnn.com -> nytimes.com -> reddit.com
+  Persona:  news_reader (confidence 100%)
+  Predicts: foxnews.com (13%) | reuters.com (13%) | apnews.com (13%)
+  -> ACTION: Prepare fake foxnews.com credential page
+
+[SESSION 2]
+  Seen:     google.com -> cnn.com -> nytimes.com -> reddit.com -> cnn.com
+  Persona:  news_reader (confidence 100%)
+  Predicts: bbc.com (50%) | foxnews.com (25%) | nytimes.com (21%)
+  -> ACTION: Prepare fake bbc.com credential page
+
+[SESSION 2]
+  Seen:     google.com -> cnn.com -> nytimes.com -> reddit.com -> cnn.com -> bbc.com
+  Persona:  news_reader (confidence 100%)
+  Predicts: reuters.com (44%) | theguardian.com (24%) | nytimes.com (18%)
+  -> ACTION: Prepare fake reuters.com credential page
+
+[SESSION 3]
+  Seen:     purdue.edu
+  Persona:  news_reader (confidence 100%)
+  Predicts: foxnews.com (13%) | reuters.com (13%) | apnews.com (13%)
+  -> ACTION: Prepare fake foxnews.com credential page
+
+[SESSION 3]
+  Seen:     purdue.edu -> purdue.brightspace.com
+  Persona:  news_reader (confidence 100%)
+  Predicts: foxnews.com (13%) | reuters.com (13%) | apnews.com (13%)
+  -> ACTION: Prepare fake foxnews.com credential page
+
+[SESSION 3]
+  Seen:     purdue.edu -> purdue.brightspace.com -> gradescope.com
+  Persona:  news_reader (confidence 100%)
+  Predicts: foxnews.com (13%) | reuters.com (13%) | apnews.com (13%)
+  -> ACTION: Prepare fake foxnews.com credential page
+
+[SESSION 3]
+  Seen:     purdue.edu -> purdue.brightspace.com -> gradescope.com -> piazza.com
+  Persona:  news_reader (confidence 100%)
+  Predicts: foxnews.com (13%) | reuters.com (13%) | apnews.com (13%)
+  -> ACTION: Prepare fake foxnews.com credential page
+
+[SESSION 3]
+  Seen:     purdue.edu -> purdue.brightspace.com -> gradescope.com -> piazza.com -> purdue.brightspace.com
+  Persona:  news_reader (confidence 100%)
+  Predicts: foxnews.com (13%) | reuters.com (13%) | apnews.com (13%)
+  -> ACTION: Prepare fake foxnews.com credential page
+
+[SESSION 4]
+  Seen:     cnn.com
+  Persona:  news_reader (confidence 100%)
+  Predicts: bbc.com (50%) | foxnews.com (25%) | nytimes.com (21%)
+  -> ACTION: Prepare fake bbc.com credential page
+
+[SESSION 4]
+  Seen:     cnn.com -> apnews.com
+  Persona:  news_reader (confidence 100%)
+  Predicts: cnn.com (67%) | bbc.com (17%) | reuters.com (17%)
+  -> ACTION: Prepare fake cnn.com credential page
+
+[SESSION 4]
+  Seen:     cnn.com -> apnews.com -> npr.org
+  Persona:  news_reader (confidence 100%)
+  Predicts: apnews.com (40%) | reuters.com (30%) | bbc.com (30%)
+  -> ACTION: Prepare fake apnews.com credential page
+
+[SESSION 4]
+  Seen:     cnn.com -> apnews.com -> npr.org -> bbc.com
+  Persona:  news_reader (confidence 100%)
+  Predicts: reuters.com (44%) | theguardian.com (24%) | nytimes.com (18%)
+  -> ACTION: Prepare fake reuters.com credential page
+
+[SESSION 4]
+  Seen:     cnn.com -> apnews.com -> npr.org -> bbc.com -> reuters.com
+  Persona:  news_reader (confidence 100%)
+  Predicts: bbc.com (47%) | nytimes.com (27%) | apnews.com (27%)
+  -> ACTION: Prepare fake bbc.com credential page
+
+[SESSION 4]
+  Seen:     cnn.com -> apnews.com -> npr.org -> bbc.com -> reuters.com -> apnews.com
+  Persona:  news_reader (confidence 100%)
+  Predicts: cnn.com (67%) | bbc.com (17%) | reuters.com (17%)
+  -> ACTION: Prepare fake cnn.com credential page
+
+[SESSION 5]
+  Seen:     google.com
+  Persona:  news_reader (confidence 100%)
+  Predicts: foxnews.com (13%) | reuters.com (13%) | apnews.com (13%)
+  -> ACTION: Prepare fake foxnews.com credential page
+
+[SESSION 5]
+  Seen:     google.com -> walmart.com
+  Persona:  news_reader (confidence 100%)
+  Predicts: foxnews.com (13%) | reuters.com (13%) | apnews.com (13%)
+  -> ACTION: Prepare fake foxnews.com credential page
+
+[SESSION 5]
+  Seen:     google.com -> walmart.com -> google.com
+  Persona:  news_reader (confidence 100%)
+  Predicts: foxnews.com (13%) | reuters.com (13%) | apnews.com (13%)
+  -> ACTION: Prepare fake foxnews.com credential page
+
+[SESSION 5]
+  Seen:     google.com -> walmart.com -> google.com -> amazon.com
+  Persona:  news_reader (confidence 100%)
+  Predicts: foxnews.com (13%) | reuters.com (13%) | apnews.com (13%)
+  -> ACTION: Prepare fake foxnews.com credential page
+
+[SESSION 5]
+  Seen:     google.com -> walmart.com -> google.com -> amazon.com -> bestbuy.com
+  Persona:  news_reader (confidence 100%)
+  Predicts: foxnews.com (13%) | reuters.com (13%) | apnews.com (13%)
+  -> ACTION: Prepare fake foxnews.com credential page
+
+[SESSION 5]
+  Seen:     google.com -> walmart.com -> google.com -> amazon.com -> bestbuy.com -> amazon.com
+  Persona:  news_reader (confidence 100%)
+  Predicts: foxnews.com (13%) | reuters.com (13%) | apnews.com (13%)
+  -> ACTION: Prepare fake foxnews.com credential page
+
+[SESSION 6]
+  Seen:     purdue.edu
+  Persona:  news_reader (confidence 100%)
+  Predicts: foxnews.com (13%) | reuters.com (13%) | apnews.com (13%)
+  -> ACTION: Prepare fake foxnews.com credential page
+
+[SESSION 7]
+  Seen:     purdue.brightspace.com
+  Persona:  news_reader (confidence 100%)
+  Predicts: foxnews.com (13%) | reuters.com (13%) | apnews.com (13%)
+  -> ACTION: Prepare fake foxnews.com credential page
+
+[SESSION 7]
+  Seen:     purdue.brightspace.com -> gradescope.com
+  Persona:  news_reader (confidence 100%)
+  Predicts: foxnews.com (13%) | reuters.com (13%) | apnews.com (13%)
+  -> ACTION: Prepare fake foxnews.com credential page
+
+[SESSION 8]
+  Seen:     google.com
+  Persona:  news_reader (confidence 100%)
+  Predicts: foxnews.com (13%) | reuters.com (13%) | apnews.com (13%)
+  -> ACTION: Prepare fake foxnews.com credential page
+
+[SESSION 8]
+  Seen:     google.com -> amazon.com
+  Persona:  news_reader (confidence 100%)
+  Predicts: foxnews.com (13%) | reuters.com (13%) | apnews.com (13%)
+  -> ACTION: Prepare fake foxnews.com credential page
+
+[SESSION 8]
+  Seen:     google.com -> amazon.com -> target.com
+  Persona:  news_reader (confidence 100%)
+  Predicts: foxnews.com (13%) | reuters.com (13%) | apnews.com (13%)
+  -> ACTION: Prepare fake foxnews.com credential page
+
+[SESSION 8]
+  Seen:     google.com -> amazon.com -> target.com -> amazon.com
+  Persona:  news_reader (confidence 100%)
+  Predicts: foxnews.com (13%) | reuters.com (13%) | apnews.com (13%)
+  -> ACTION: Prepare fake foxnews.com credential page
+
+[SESSION 9]
+  Seen:     cnn.com
+  Persona:  news_reader (confidence 100%)
+  Predicts: bbc.com (50%) | foxnews.com (25%) | nytimes.com (21%)
+  -> ACTION: Prepare fake bbc.com credential page
+
+[SESSION 9]
+  Seen:     cnn.com -> reddit.com
+  Persona:  news_reader (confidence 100%)
+  Predicts: foxnews.com (13%) | reuters.com (13%) | apnews.com (13%)
+  -> ACTION: Prepare fake foxnews.com credential page
+
+[SESSION 9]
+  Seen:     cnn.com -> reddit.com -> google.com
+  Persona:  news_reader (confidence 100%)
+  Predicts: foxnews.com (13%) | reuters.com (13%) | apnews.com (13%)
+  -> ACTION: Prepare fake foxnews.com credential page
+
+[SESSION 9]
+  Seen:     cnn.com -> reddit.com -> google.com -> bbc.com
+  Persona:  news_reader (confidence 100%)
+  Predicts: reuters.com (44%) | theguardian.com (24%) | nytimes.com (18%)
+  -> ACTION: Prepare fake reuters.com credential page
+
+[SESSION 9]
+  Seen:     cnn.com -> reddit.com -> google.com -> bbc.com -> theguardian.com
+  Persona:  news_reader (confidence 100%)
+  Predicts: bbc.com (33%) | reuters.com (33%) | nytimes.com (33%)
+  -> ACTION: Prepare fake bbc.com credential page
+
+[SESSION 10]
+  Seen:     purdue.edu
+  Persona:  news_reader (confidence 100%)
+  Predicts: foxnews.com (13%) | reuters.com (13%) | apnews.com (13%)
+  -> ACTION: Prepare fake foxnews.com credential page
+
+[SESSION 10]
+  Seen:     purdue.edu -> mypurdue.purdue.edu
+  Persona:  news_reader (confidence 100%)
+  Predicts: foxnews.com (13%) | reuters.com (13%) | apnews.com (13%)
+  -> ACTION: Prepare fake foxnews.com credential page
+
+[SESSION 10]
+  Seen:     purdue.edu -> mypurdue.purdue.edu -> purdue.brightspace.com
+  Persona:  news_reader (confidence 100%)
+  Predicts: foxnews.com (13%) | reuters.com (13%) | apnews.com (13%)
+  -> ACTION: Prepare fake foxnews.com credential page
+
+[SESSION 10]
+  Seen:     purdue.edu -> mypurdue.purdue.edu -> purdue.brightspace.com -> edstem.org
+  Persona:  news_reader (confidence 100%)
+  Predicts: foxnews.com (13%) | reuters.com (13%) | apnews.com (13%)
+  -> ACTION: Prepare fake foxnews.com credential page
+
+[SESSION 10]
+  Seen:     purdue.edu -> mypurdue.purdue.edu -> purdue.brightspace.com -> edstem.org -> piazza.com
+  Persona:  news_reader (confidence 100%)
+  Predicts: foxnews.com (13%) | reuters.com (13%) | apnews.com (13%)
+  -> ACTION: Prepare fake foxnews.com credential page
+
+[SESSION 11]
+  Seen:     edstem.org
+  Persona:  news_reader (confidence 100%)
+  Predicts: foxnews.com (13%) | reuters.com (13%) | apnews.com (13%)
+  -> ACTION: Prepare fake foxnews.com credential page
+
+[SESSION 11]
+  Seen:     edstem.org -> vocareum.com
+  Persona:  news_reader (confidence 100%)
+  Predicts: foxnews.com (13%) | reuters.com (13%) | apnews.com (13%)
+  -> ACTION: Prepare fake foxnews.com credential page
+
+[SESSION 11]
+  Seen:     edstem.org -> vocareum.com -> edstem.org
+  Persona:  news_reader (confidence 100%)
+  Predicts: foxnews.com (13%) | reuters.com (13%) | apnews.com (13%)
+  -> ACTION: Prepare fake foxnews.com credential page
+
+[SESSION 12]
+  Seen:     amazon.com
+  Persona:  news_reader (confidence 100%)
+  Predicts: foxnews.com (13%) | reuters.com (13%) | apnews.com (13%)
+  -> ACTION: Prepare fake foxnews.com credential page
+
+[SESSION 12]
+  Seen:     amazon.com -> walmart.com
+  Persona:  news_reader (confidence 100%)
+  Predicts: foxnews.com (13%) | reuters.com (13%) | apnews.com (13%)
+  -> ACTION: Prepare fake foxnews.com credential page
+
+[SESSION 12]
+  Seen:     amazon.com -> walmart.com -> paypal.com
+  Persona:  news_reader (confidence 100%)
+  Predicts: foxnews.com (13%) | reuters.com (13%) | apnews.com (13%)
+  -> ACTION: Prepare fake foxnews.com credential page
+
+[SESSION 12]
+  Seen:     amazon.com -> walmart.com -> paypal.com -> ebay.com
+  Persona:  news_reader (confidence 100%)
+  Predicts: foxnews.com (13%) | reuters.com (13%) | apnews.com (13%)
+  -> ACTION: Prepare fake foxnews.com credential page
+
+[SESSION 13]
+  Seen:     google.com
+  Persona:  news_reader (confidence 100%)
+  Predicts: foxnews.com (13%) | reuters.com (13%) | apnews.com (13%)
+  -> ACTION: Prepare fake foxnews.com credential page
+
+[SESSION 13]
+  Seen:     google.com -> nytimes.com
+  Persona:  news_reader (confidence 100%)
+  Predicts: theguardian.com (60%) | reuters.com (25%) | bbc.com (15%)
+  -> ACTION: Prepare fake theguardian.com credential page
+
+[SESSION 13]
+  Seen:     google.com -> nytimes.com -> theguardian.com
+  Persona:  news_reader (confidence 100%)
+  Predicts: bbc.com (33%) | reuters.com (33%) | nytimes.com (33%)
+  -> ACTION: Prepare fake bbc.com credential page
+
+[SESSION 13]
+  Seen:     google.com -> nytimes.com -> theguardian.com -> nytimes.com
+  Persona:  news_reader (confidence 100%)
+  Predicts: theguardian.com (60%) | reuters.com (25%) | bbc.com (15%)
+  -> ACTION: Prepare fake theguardian.com credential page
+
+[SESSION 13]
+  Seen:     google.com -> nytimes.com -> theguardian.com -> nytimes.com -> reuters.com
+  Persona:  news_reader (confidence 100%)
+  Predicts: bbc.com (47%) | nytimes.com (27%) | apnews.com (27%)
+  -> ACTION: Prepare fake bbc.com credential page
+
+[SESSION 14]
+  Seen:     google.com
+  Persona:  news_reader (confidence 100%)
+  Predicts: foxnews.com (13%) | reuters.com (13%) | apnews.com (13%)
+  -> ACTION: Prepare fake foxnews.com credential page
+
+[SESSION 14]
+  Seen:     google.com -> cnn.com
+  Persona:  news_reader (confidence 100%)
+  Predicts: bbc.com (50%) | foxnews.com (25%) | nytimes.com (21%)
+  -> ACTION: Prepare fake bbc.com credential page
+
+[SESSION 14]
+  Seen:     google.com -> cnn.com -> reddit.com
+  Persona:  news_reader (confidence 100%)
+  Predicts: foxnews.com (13%) | reuters.com (13%) | apnews.com (13%)
+  -> ACTION: Prepare fake foxnews.com credential page
+
+[SESSION 14]
+  Seen:     google.com -> cnn.com -> reddit.com -> cnn.com
+  Persona:  news_reader (confidence 100%)
+  Predicts: bbc.com (50%) | foxnews.com (25%) | nytimes.com (21%)
+  -> ACTION: Prepare fake bbc.com credential page
+
+[SESSION 14]
+  Seen:     google.com -> cnn.com -> reddit.com -> cnn.com -> apnews.com
+  Persona:  news_reader (confidence 100%)
+  Predicts: cnn.com (67%) | bbc.com (17%) | reuters.com (17%)
+  -> ACTION: Prepare fake cnn.com credential page
+
+[SESSION 14]
+  Seen:     google.com -> cnn.com -> reddit.com -> cnn.com -> apnews.com -> bbc.com
+  Persona:  news_reader (confidence 100%)
+  Predicts: reuters.com (44%) | theguardian.com (24%) | nytimes.com (18%)
+  -> ACTION: Prepare fake reuters.com credential page
+
+[SESSION 15]
+  Seen:     amazon.com
+  Persona:  news_reader (confidence 100%)
+  Predicts: foxnews.com (13%) | reuters.com (13%) | apnews.com (13%)
+  -> ACTION: Prepare fake foxnews.com credential page
+
+[SESSION 15]
+  Seen:     amazon.com -> ebay.com
+  Persona:  news_reader (confidence 100%)
+  Predicts: foxnews.com (13%) | reuters.com (13%) | apnews.com (13%)
+  -> ACTION: Prepare fake foxnews.com credential page
+
+[SESSION 15]
+  Seen:     amazon.com -> ebay.com -> paypal.com
+  Persona:  news_reader (confidence 100%)
+  Predicts: foxnews.com (13%) | reuters.com (13%) | apnews.com (13%)
+  -> ACTION: Prepare fake foxnews.com credential page
+
+[SESSION 15]
+  Seen:     amazon.com -> ebay.com -> paypal.com -> amazon.com
+  Persona:  news_reader (confidence 100%)
+  Predicts: foxnews.com (13%) | reuters.com (13%) | apnews.com (13%)
+  -> ACTION: Prepare fake foxnews.com credential page

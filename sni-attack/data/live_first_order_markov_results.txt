@@ -1,285 +1,5 @@
-[04/30/2026 17:37] cs528user@cs528vm:~/project$ sudo ./victim.sh demo.csv 
-[sudo] password for cs528user: 
-
-=== SESSION 0 (student) ===
-  curl https://purdue.edu
-  curl https://purdue.brightspace.com
-  curl https://reddit.com
-  curl https://purdue.edu
-
---- end of session 0, sleeping 5s ---
-
-=== SESSION 1 (shopper) ===
-  curl https://ebay.com
-  curl https://paypal.com
-  curl https://ebay.com
-  curl https://amazon.com
-  curl https://paypal.com
-  curl https://venmo.com
-
---- end of session 1, sleeping 5s ---
-
-=== SESSION 2 (news_reader) ===
-  curl https://google.com
-  curl https://cnn.com
-  curl https://nytimes.com
-  curl https://reddit.com
-  curl https://cnn.com
-  curl https://bbc.com
-
---- end of session 2, sleeping 5s ---
-
-=== SESSION 3 (student) ===
-  curl https://purdue.edu
-  curl https://purdue.brightspace.com
-  curl https://gradescope.com
-  curl https://piazza.com
-  curl https://purdue.brightspace.com
-
---- end of session 3, sleeping 5s ---
-
-=== SESSION 4 (news_reader) ===
-  curl https://cnn.com
-  curl https://apnews.com
-  curl https://npr.org
-  curl https://bbc.com
-  curl https://reuters.com
-  curl https://apnews.com
-
---- end of session 4, sleeping 5s ---
-
-=== SESSION 5 (shopper) ===
-  curl https://google.com
-  curl https://walmart.com
-  curl https://google.com
-  curl https://amazon.com
-  curl https://bestbuy.com
-  curl https://amazon.com
-
---- end of session 5, sleeping 5s ---
-
-=== SESSION 6 (student) ===
-  curl https://purdue.edu
-  curl https://mail.purdue.edu
-  curl https://purdue.brightspace.com
-  curl https://gradescope.com
-
---- end of session 6, sleeping 5s ---
-
-=== SESSION 7 (shopper) ===
-  curl https://google.com
-  curl https://amazon.com
-  curl https://target.com
-  curl https://amazon.com
-
---- end of session 7, sleeping 5s ---
-
-=== SESSION 8 (news_reader) ===
-  curl https://cnn.com
-  curl https://reddit.com
-  curl https://google.com
-  curl https://bbc.com
-  curl https://theguardian.com
-
---- end of session 8, sleeping 5s ---
-
-=== SESSION 9 (student) ===
-  curl https://purdue.edu
-  curl https://mypurdue.purdue.edu
-  curl https://purdue.brightspace.com
-  curl https://edstem.org
-  curl https://piazza.com
-
---- end of session 9, sleeping 5s ---
-
-=== SESSION 10 (student) ===
-  curl https://mail.purdue.edu
-  curl https://edstem.org
-  curl https://vocareum.com
-  curl https://edstem.org
-
---- end of session 10, sleeping 5s ---
-
-=== SESSION 11 (shopper) ===
-  curl https://amazon.com
-  curl https://walmart.com
-  curl https://paypal.com
-  curl https://ebay.com
-
---- end of session 11, sleeping 5s ---
-
-=== SESSION 12 (news_reader) ===
-  curl https://google.com
-  curl https://nytimes.com
-  curl https://theguardian.com
-  curl https://nytimes.com
-  curl https://reuters.com
-
---- end of session 12, sleeping 5s ---
-
-=== SESSION 13 (news_reader) ===
-  curl https://google.com
-  curl https://cnn.com
-  curl https://reddit.com
-  curl https://cnn.com
-  curl https://apnews.com
-  curl https://bbc.com
-
---- end of session 13, sleeping 5s ---
-
-=== SESSION 14 (shopper) ===
-  curl https://amazon.com
-  curl https://ebay.com
-  curl https://paypal.com
-  curl https://amazon.com
-
-Done.
-[04/30/2026 17:41] cs528user@cs528vm:~/project$ sudo ./victim.sh demo.csv 
-
-=== SESSION 0 (student) ===
-  curl https://purdue.edu
-  curl https://purdue.brightspace.com
-  curl https://reddit.com
-  curl https://purdue.edu
-
---- end of session 0, sleeping 5s ---
-
-=== SESSION 1 (shopper) ===
-  curl https://ebay.com
-  curl https://paypal.com
-  curl https://ebay.com
-  curl https://amazon.com
-  curl https://paypal.com
-  curl https://venmo.com
-
---- end of session 1, sleeping 5s ---
-
-=== SESSION 2 (news_reader) ===
-  curl https://google.com
-  curl https://cnn.com
-  curl https://nytimes.com
-  curl https://reddit.com
-  curl https://cnn.com
-  curl https://bbc.com
-
---- end of session 2, sleeping 5s ---
-
-=== SESSION 3 (student) ===
-  curl https://purdue.edu
-  curl https://purdue.brightspace.com
-  curl https://gradescope.com
-  curl https://piazza.com
-  curl https://purdue.brightspace.com
-
---- end of session 3, sleeping 5s ---
-
-=== SESSION 4 (news_reader) ===
-  curl https://cnn.com
-  curl https://apnews.com
-  curl https://npr.org
-  curl https://bbc.com
-  curl https://reuters.com
-  curl https://apnews.com
-
---- end of session 4, sleeping 5s ---
-
-=== SESSION 5 (shopper) ===
-  curl https://google.com
-  curl https://walmart.com
-  curl https://google.com
-  curl https://amazon.com
-  curl https://bestbuy.com
-  curl https://amazon.com
-
---- end of session 5, sleeping 5s ---
-
-=== SESSION 6 (student) ===
-  curl https://purdue.edu
-  curl https://mail.purdue.edu
-  curl https://purdue.brightspace.com
-  curl https://gradescope.com
-
---- end of session 6, sleeping 5s ---
-
-=== SESSION 7 (shopper) ===
-  curl https://google.com
-  curl https://amazon.com
-  curl https://target.com
-  curl https://amazon.com
-
---- end of session 7, sleeping 5s ---
-
-=== SESSION 8 (news_reader) ===
-  curl https://cnn.com
-  curl https://reddit.com
-  curl https://google.com
-  curl https://bbc.com
-  curl https://theguardian.com
-
---- end of session 8, sleeping 5s ---
-
-=== SESSION 9 (student) ===
-  curl https://purdue.edu
-  curl https://mypurdue.purdue.edu
-  curl https://purdue.brightspace.com
-  curl https://edstem.org
-  curl https://piazza.com
-
---- end of session 9, sleeping 5s ---
-
-=== SESSION 10 (student) ===
-  curl https://mail.purdue.edu
-  curl https://edstem.org
-  curl https://vocareum.com
-  curl https://edstem.org
-
---- end of session 10, sleeping 5s ---
-
-=== SESSION 11 (shopper) ===
-  curl https://amazon.com
-  curl https://walmart.com
-  curl https://paypal.com
-  curl https://ebay.com
-
---- end of session 11, sleeping 5s ---
-
-=== SESSION 12 (news_reader) ===
-  curl https://google.com
-  curl https://nytimes.com
-  curl https://theguardian.com
-  curl https://nytimes.com
-  curl https://reuters.com
-
---- end of session 12, sleeping 5s ---
-
-=== SESSION 13 (news_reader) ===
-  curl https://google.com
-  curl https://cnn.com
-  curl https://reddit.com
-  curl https://cnn.com
-  curl https://apnews.com
-  curl https://bbc.com
-
---- end of session 13, sleeping 5s ---
-
-=== SESSION 14 (shopper) ===
-  curl https://amazon.com
-  curl https://ebay.com
-  curl https://paypal.com
-  curl https://amazon.com
-
-Done.
-
-
-
-
-
-****************************************************************************************************************
-
-
-
-
-[04/30/2026 17:43] cs528user@cs528vm:~/project$ sudo python attack.py 
+[04/30/2026 21:00] cs528user@cs528vm:~/sni-attack/scripts$ sudo python attack.py --predictor-pkl ../models/markov.json
+[attack.py] Live models: classifier=(hardcoded) predictor=../models/markov.json
 [attack.py] Starting live capture on interface eth14
 [attack.py] Waiting for TLS traffic... (Ctrl-C to stop)
 
@@ -293,14 +13,14 @@ Done.
 [SESSION 0]
   Seen:     purdue.edu -> purdue.brightspace.com
   Persona:  student (confidence 100%)
-  Predicts: piazza.com (55%) | edstem.org (32%) | gradescope.com (14%)
+  Predicts: piazza.com (48%) | edstem.org (28%) | gradescope.com (12%)
   -> ACTION: Prepare fake piazza.com credential page
 
 [SESSION 0]
   Seen:     purdue.edu -> purdue.brightspace.com -> reddit.com
   Persona:  student (confidence 100%)
-  Predicts: piazza.com (11%) | mail.purdue.edu (11%) | edstem.org (11%)
-  -> ACTION: Prepare fake piazza.com credential page
+  Predicts: bbc.com (18%) | cnn.com (18%) | nytimes.com (18%)
+  -> ACTION: Prepare fake bbc.com credential page
 
 [SESSION 0]
   Seen:     purdue.edu -> purdue.brightspace.com -> reddit.com -> purdue.edu
@@ -317,7 +37,7 @@ Done.
 [SESSION 1]
   Seen:     ebay.com -> paypal.com
   Persona:  shopper (confidence 100%)
-  Predicts: amazon.com (55%) | ebay.com (31%) | venmo.com (14%)
+  Predicts: amazon.com (46%) | ebay.com (26%) | google.com (17%)
   -> ACTION: Prepare fake amazon.com credential page
 
 [SESSION 1]
@@ -335,41 +55,43 @@ Done.
 [SESSION 1]
   Seen:     ebay.com -> paypal.com -> ebay.com -> amazon.com -> paypal.com
   Persona:  shopper (confidence 100%)
-  Predicts: amazon.com (55%) | ebay.com (31%) | venmo.com (14%)
+  Predicts: amazon.com (46%) | ebay.com (26%) | google.com (17%)
   -> ACTION: Prepare fake amazon.com credential page
 
 [SESSION 1]
   Seen:     ebay.com -> paypal.com -> ebay.com -> amazon.com -> paypal.com -> venmo.com
   Persona:  shopper (confidence 100%)
-  Predicts: paypal.com (50%) | ebay.com (33%) | amazon.com (17%)
+  Predicts: paypal.com (43%) | ebay.com (29%) | amazon.com (14%)
   -> ACTION: Prepare fake paypal.com credential page
 
 [SESSION 2]
   Seen:     google.com
   Persona:  unknown (only shared SNIs seen so far)
+  Predicts: reddit.com (21%) | cnn.com (16%) | purdue.edu (16%)
+  -> ACTION: Prepare fake reddit.com credential page
 
 [SESSION 2]
   Seen:     google.com -> cnn.com
   Persona:  news_reader (confidence 100%)
-  Predicts: bbc.com (50%) | foxnews.com (25%) | nytimes.com (21%)
+  Predicts: bbc.com (36%) | reddit.com (28%) | foxnews.com (18%)
   -> ACTION: Prepare fake bbc.com credential page
 
 [SESSION 2]
   Seen:     google.com -> cnn.com -> nytimes.com
   Persona:  news_reader (confidence 100%)
-  Predicts: theguardian.com (60%) | reuters.com (25%) | bbc.com (15%)
+  Predicts: theguardian.com (50%) | reuters.com (21%) | reddit.com (17%)
   -> ACTION: Prepare fake theguardian.com credential page
 
 [SESSION 2]
   Seen:     google.com -> cnn.com -> nytimes.com -> reddit.com
   Persona:  news_reader (confidence 100%)
-  Predicts: foxnews.com (13%) | reuters.com (13%) | apnews.com (13%)
-  -> ACTION: Prepare fake foxnews.com credential page
+  Predicts: bbc.com (18%) | cnn.com (18%) | nytimes.com (18%)
+  -> ACTION: Prepare fake bbc.com credential page
 
 [SESSION 2]
   Seen:     google.com -> cnn.com -> nytimes.com -> reddit.com -> cnn.com
   Persona:  news_reader (confidence 100%)
-  Predicts: bbc.com (50%) | foxnews.com (25%) | nytimes.com (21%)
+  Predicts: bbc.com (36%) | reddit.com (28%) | foxnews.com (18%)
   -> ACTION: Prepare fake bbc.com credential page
 
 [SESSION 2]
@@ -387,31 +109,31 @@ Done.
 [SESSION 3]
   Seen:     purdue.edu -> purdue.brightspace.com
   Persona:  student (confidence 100%)
-  Predicts: piazza.com (55%) | edstem.org (32%) | gradescope.com (14%)
+  Predicts: piazza.com (48%) | edstem.org (28%) | gradescope.com (12%)
   -> ACTION: Prepare fake piazza.com credential page
 
 [SESSION 3]
   Seen:     purdue.edu -> purdue.brightspace.com -> gradescope.com
   Persona:  student (confidence 100%)
-  Predicts: piazza.com (33%) | vocareum.com (33%) | edstem.org (33%)
-  -> ACTION: Prepare fake piazza.com credential page
+  Predicts: edstem.org (26%) | piazza.com (26%) | vocareum.com (26%)
+  -> ACTION: Prepare fake edstem.org credential page
 
 [SESSION 3]
   Seen:     purdue.edu -> purdue.brightspace.com -> gradescope.com -> piazza.com
   Persona:  student (confidence 100%)
-  Predicts: gradescope.com (42%) | edstem.org (42%) | purdue.brightspace.com (16%)
-  -> ACTION: Prepare fake gradescope.com credential page
+  Predicts: edstem.org (36%) | gradescope.com (36%) | purdue.brightspace.com (14%)
+  -> ACTION: Prepare fake edstem.org credential page
 
 [SESSION 3]
   Seen:     purdue.edu -> purdue.brightspace.com -> gradescope.com -> piazza.com -> purdue.brightspace.com
   Persona:  student (confidence 100%)
-  Predicts: piazza.com (55%) | edstem.org (32%) | gradescope.com (14%)
+  Predicts: piazza.com (48%) | edstem.org (28%) | gradescope.com (12%)
   -> ACTION: Prepare fake piazza.com credential page
 
 [SESSION 4]
   Seen:     cnn.com
   Persona:  news_reader (confidence 100%)
-  Predicts: bbc.com (50%) | foxnews.com (25%) | nytimes.com (21%)
+  Predicts: bbc.com (36%) | reddit.com (28%) | foxnews.com (18%)
   -> ACTION: Prepare fake bbc.com credential page
 
 [SESSION 4]
@@ -423,8 +145,6 @@ Done.
 [SESSION 4]
   Seen:     cnn.com -> apnews.com -> npr.org
   Persona:  news_reader (confidence 100%)
-  Predicts: apnews.com (40%) | reuters.com (30%) | bbc.com (30%)
-  -> ACTION: Prepare fake apnews.com credential page
 
 [SESSION 4]
   Seen:     cnn.com -> apnews.com -> npr.org -> bbc.com
@@ -435,7 +155,7 @@ Done.
 [SESSION 4]
   Seen:     cnn.com -> apnews.com -> npr.org -> bbc.com -> reuters.com
   Persona:  news_reader (confidence 100%)
-  Predicts: bbc.com (47%) | nytimes.com (27%) | apnews.com (27%)
+  Predicts: bbc.com (35%) | google.com (25%) | apnews.com (20%)
   -> ACTION: Prepare fake bbc.com credential page
 
 [SESSION 4]
@@ -447,18 +167,20 @@ Done.
 [SESSION 5]
   Seen:     google.com
   Persona:  unknown (only shared SNIs seen so far)
+  Predicts: reddit.com (21%) | cnn.com (16%) | purdue.edu (16%)
+  -> ACTION: Prepare fake reddit.com credential page
 
 [SESSION 5]
   Seen:     google.com -> walmart.com
   Persona:  shopper (confidence 100%)
-  Predicts: amazon.com (40%) | target.com (30%) | paypal.com (30%)
+  Predicts: amazon.com (29%) | google.com (29%) | paypal.com (21%)
   -> ACTION: Prepare fake amazon.com credential page
 
 [SESSION 5]
   Seen:     google.com -> walmart.com -> google.com
   Persona:  shopper (confidence 100%)
-  Predicts: target.com (11%) | ebay.com (11%) | etsy.com (11%)
-  -> ACTION: Prepare fake target.com credential page
+  Predicts: reddit.com (21%) | cnn.com (16%) | purdue.edu (16%)
+  -> ACTION: Prepare fake reddit.com credential page
 
 [SESSION 5]
   Seen:     google.com -> walmart.com -> google.com -> amazon.com
@@ -487,18 +209,20 @@ Done.
 [SESSION 7]
   Seen:     purdue.brightspace.com
   Persona:  student (confidence 100%)
-  Predicts: piazza.com (55%) | edstem.org (32%) | gradescope.com (14%)
+  Predicts: piazza.com (48%) | edstem.org (28%) | gradescope.com (12%)
   -> ACTION: Prepare fake piazza.com credential page
 
 [SESSION 7]
   Seen:     purdue.brightspace.com -> gradescope.com
   Persona:  student (confidence 100%)
-  Predicts: piazza.com (33%) | vocareum.com (33%) | edstem.org (33%)
-  -> ACTION: Prepare fake piazza.com credential page
+  Predicts: edstem.org (26%) | piazza.com (26%) | vocareum.com (26%)
+  -> ACTION: Prepare fake edstem.org credential page
 
 [SESSION 8]
   Seen:     google.com
   Persona:  unknown (only shared SNIs seen so far)
+  Predicts: reddit.com (21%) | cnn.com (16%) | purdue.edu (16%)
+  -> ACTION: Prepare fake reddit.com credential page
 
 [SESSION 8]
   Seen:     google.com -> amazon.com
@@ -509,8 +233,8 @@ Done.
 [SESSION 8]
   Seen:     google.com -> amazon.com -> target.com
   Persona:  shopper (confidence 100%)
-  Predicts: paypal.com (33%) | amazon.com (33%) | walmart.com (17%)
-  -> ACTION: Prepare fake paypal.com credential page
+  Predicts: amazon.com (33%) | paypal.com (33%) | etsy.com (17%)
+  -> ACTION: Prepare fake amazon.com credential page
 
 [SESSION 8]
   Seen:     google.com -> amazon.com -> target.com -> amazon.com
@@ -521,20 +245,20 @@ Done.
 [SESSION 9]
   Seen:     cnn.com
   Persona:  news_reader (confidence 100%)
-  Predicts: bbc.com (50%) | foxnews.com (25%) | nytimes.com (21%)
+  Predicts: bbc.com (36%) | reddit.com (28%) | foxnews.com (18%)
   -> ACTION: Prepare fake bbc.com credential page
 
 [SESSION 9]
   Seen:     cnn.com -> reddit.com
   Persona:  news_reader (confidence 100%)
-  Predicts: foxnews.com (13%) | reuters.com (13%) | apnews.com (13%)
-  -> ACTION: Prepare fake foxnews.com credential page
+  Predicts: bbc.com (18%) | cnn.com (18%) | nytimes.com (18%)
+  -> ACTION: Prepare fake bbc.com credential page
 
 [SESSION 9]
   Seen:     cnn.com -> reddit.com -> google.com
   Persona:  news_reader (confidence 100%)
-  Predicts: foxnews.com (13%) | reuters.com (13%) | apnews.com (13%)
-  -> ACTION: Prepare fake foxnews.com credential page
+  Predicts: reddit.com (21%) | cnn.com (16%) | purdue.edu (16%)
+  -> ACTION: Prepare fake reddit.com credential page
 
 [SESSION 9]
   Seen:     cnn.com -> reddit.com -> google.com -> bbc.com
@@ -545,7 +269,7 @@ Done.
 [SESSION 9]
   Seen:     cnn.com -> reddit.com -> google.com -> bbc.com -> theguardian.com
   Persona:  news_reader (confidence 100%)
-  Predicts: bbc.com (33%) | reuters.com (33%) | nytimes.com (33%)
+  Predicts: bbc.com (29%) | nytimes.com (29%) | reuters.com (29%)
   -> ACTION: Prepare fake bbc.com credential page
 
 [SESSION 10]
@@ -557,43 +281,43 @@ Done.
 [SESSION 10]
   Seen:     purdue.edu -> mypurdue.purdue.edu
   Persona:  student (confidence 100%)
-  Predicts: mail.purdue.edu (43%) | purdue.edu (43%) | purdue.brightspace.com (14%)
+  Predicts: mail.purdue.edu (33%) | purdue.edu (33%) | reddit.com (22%)
   -> ACTION: Prepare fake mail.purdue.edu credential page
 
 [SESSION 10]
   Seen:     purdue.edu -> mypurdue.purdue.edu -> purdue.brightspace.com
   Persona:  student (confidence 100%)
-  Predicts: piazza.com (55%) | edstem.org (32%) | gradescope.com (14%)
+  Predicts: piazza.com (48%) | edstem.org (28%) | gradescope.com (12%)
   -> ACTION: Prepare fake piazza.com credential page
 
 [SESSION 10]
   Seen:     purdue.edu -> mypurdue.purdue.edu -> purdue.brightspace.com -> edstem.org
   Persona:  student (confidence 100%)
-  Predicts: vocareum.com (46%) | gradescope.com (38%) | piazza.com (15%)
+  Predicts: vocareum.com (40%) | gradescope.com (33%) | piazza.com (13%)
   -> ACTION: Prepare fake vocareum.com credential page
 
 [SESSION 10]
   Seen:     purdue.edu -> mypurdue.purdue.edu -> purdue.brightspace.com -> edstem.org -> piazza.com
   Persona:  student (confidence 100%)
-  Predicts: gradescope.com (42%) | edstem.org (42%) | purdue.brightspace.com (16%)
-  -> ACTION: Prepare fake gradescope.com credential page
+  Predicts: edstem.org (36%) | gradescope.com (36%) | purdue.brightspace.com (14%)
+  -> ACTION: Prepare fake edstem.org credential page
 
 [SESSION 11]
   Seen:     edstem.org
   Persona:  student (confidence 100%)
-  Predicts: vocareum.com (46%) | gradescope.com (38%) | piazza.com (15%)
+  Predicts: vocareum.com (40%) | gradescope.com (33%) | piazza.com (13%)
   -> ACTION: Prepare fake vocareum.com credential page
 
 [SESSION 11]
   Seen:     edstem.org -> vocareum.com
   Persona:  student (confidence 100%)
-  Predicts: gradescope.com (50%) | edstem.org (50%)
-  -> ACTION: Prepare fake gradescope.com credential page
+  Predicts: edstem.org (50%) | gradescope.com (50%)
+  -> ACTION: Prepare fake edstem.org credential page
 
 [SESSION 11]
   Seen:     edstem.org -> vocareum.com -> edstem.org
   Persona:  student (confidence 100%)
-  Predicts: vocareum.com (46%) | gradescope.com (38%) | piazza.com (15%)
+  Predicts: vocareum.com (40%) | gradescope.com (33%) | piazza.com (13%)
   -> ACTION: Prepare fake vocareum.com credential page
 
 [SESSION 12]
@@ -605,13 +329,13 @@ Done.
 [SESSION 12]
   Seen:     amazon.com -> walmart.com
   Persona:  shopper (confidence 100%)
-  Predicts: amazon.com (40%) | target.com (30%) | paypal.com (30%)
+  Predicts: amazon.com (29%) | google.com (29%) | paypal.com (21%)
   -> ACTION: Prepare fake amazon.com credential page
 
 [SESSION 12]
   Seen:     amazon.com -> walmart.com -> paypal.com
   Persona:  shopper (confidence 100%)
-  Predicts: amazon.com (55%) | ebay.com (31%) | venmo.com (14%)
+  Predicts: amazon.com (46%) | ebay.com (26%) | google.com (17%)
   -> ACTION: Prepare fake amazon.com credential page
 
 [SESSION 12]
@@ -623,51 +347,55 @@ Done.
 [SESSION 13]
   Seen:     google.com
   Persona:  unknown (only shared SNIs seen so far)
+  Predicts: reddit.com (21%) | cnn.com (16%) | purdue.edu (16%)
+  -> ACTION: Prepare fake reddit.com credential page
 
 [SESSION 13]
   Seen:     google.com -> nytimes.com
   Persona:  news_reader (confidence 100%)
-  Predicts: theguardian.com (60%) | reuters.com (25%) | bbc.com (15%)
+  Predicts: theguardian.com (50%) | reuters.com (21%) | reddit.com (17%)
   -> ACTION: Prepare fake theguardian.com credential page
 
 [SESSION 13]
   Seen:     google.com -> nytimes.com -> theguardian.com
   Persona:  news_reader (confidence 100%)
-  Predicts: bbc.com (33%) | reuters.com (33%) | nytimes.com (33%)
+  Predicts: bbc.com (29%) | nytimes.com (29%) | reuters.com (29%)
   -> ACTION: Prepare fake bbc.com credential page
 
 [SESSION 13]
   Seen:     google.com -> nytimes.com -> theguardian.com -> nytimes.com
   Persona:  news_reader (confidence 100%)
-  Predicts: theguardian.com (60%) | reuters.com (25%) | bbc.com (15%)
+  Predicts: theguardian.com (50%) | reuters.com (21%) | reddit.com (17%)
   -> ACTION: Prepare fake theguardian.com credential page
 
 [SESSION 13]
   Seen:     google.com -> nytimes.com -> theguardian.com -> nytimes.com -> reuters.com
   Persona:  news_reader (confidence 100%)
-  Predicts: bbc.com (47%) | nytimes.com (27%) | apnews.com (27%)
+  Predicts: bbc.com (35%) | google.com (25%) | apnews.com (20%)
   -> ACTION: Prepare fake bbc.com credential page
 
 [SESSION 14]
   Seen:     google.com
   Persona:  unknown (only shared SNIs seen so far)
+  Predicts: reddit.com (21%) | cnn.com (16%) | purdue.edu (16%)
+  -> ACTION: Prepare fake reddit.com credential page
 
 [SESSION 14]
   Seen:     google.com -> cnn.com
   Persona:  news_reader (confidence 100%)
-  Predicts: bbc.com (50%) | foxnews.com (25%) | nytimes.com (21%)
+  Predicts: bbc.com (36%) | reddit.com (28%) | foxnews.com (18%)
   -> ACTION: Prepare fake bbc.com credential page
 
 [SESSION 14]
   Seen:     google.com -> cnn.com -> reddit.com
   Persona:  news_reader (confidence 100%)
-  Predicts: foxnews.com (13%) | reuters.com (13%) | apnews.com (13%)
-  -> ACTION: Prepare fake foxnews.com credential page
+  Predicts: bbc.com (18%) | cnn.com (18%) | nytimes.com (18%)
+  -> ACTION: Prepare fake bbc.com credential page
 
 [SESSION 14]
   Seen:     google.com -> cnn.com -> reddit.com -> cnn.com
   Persona:  news_reader (confidence 100%)
-  Predicts: bbc.com (50%) | foxnews.com (25%) | nytimes.com (21%)
+  Predicts: bbc.com (36%) | reddit.com (28%) | foxnews.com (18%)
   -> ACTION: Prepare fake bbc.com credential page
 
 [SESSION 14]
@@ -697,7 +425,7 @@ Done.
 [SESSION 15]
   Seen:     amazon.com -> ebay.com -> paypal.com
   Persona:  shopper (confidence 100%)
-  Predicts: amazon.com (55%) | ebay.com (31%) | venmo.com (14%)
+  Predicts: amazon.com (46%) | ebay.com (26%) | google.com (17%)
   -> ACTION: Prepare fake amazon.com credential page
 
 [SESSION 15]
@@ -705,5 +433,3 @@ Done.
   Persona:  shopper (confidence 100%)
   Predicts: paypal.com (37%) | bestbuy.com (23%) | ebay.com (17%)
   -> ACTION: Prepare fake paypal.com credential page
-^C
-[attack.py] Stopped.

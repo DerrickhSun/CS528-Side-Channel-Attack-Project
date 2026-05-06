@@ -218,12 +218,28 @@ def _load_predictor_pickle(path):
     global _LIVE_PREDICTOR
     if sys.version_info[0] < 3:
         sys.stderr.write(
-            "[attack.py] Loading predictor .pkl requires Python 3 "
+            "[attack.py] Loading predictor models requires Python 3 "
             "(same as ``scripts/train.py``).\n"
         )
         sys.exit(1)
     if _ROOT_DIR not in sys.path:
         sys.path.insert(0, _ROOT_DIR)
+
+    path = os.path.abspath(path)
+    # Hugging Face directory from ``train.py llm_predictor`` (not a .pkl file)
+    if os.path.isdir(path):
+        meta = os.path.join(path, "llm_predictor_meta.json")
+        if os.path.isfile(meta):
+            from models.llm_predictor import LLMPredictor
+
+            _LIVE_PREDICTOR = LLMPredictor.load(path)
+            return
+        sys.stderr.write(
+            "[attack.py] Directory %r has no llm_predictor_meta.json; "
+            "expected models/llm_predictor/ from train.py llm_predictor.\n" % (path,)
+        )
+        sys.exit(1)
+
     import pickle
 
     from models.first_order_markov import FirstOrderMarkov
@@ -480,7 +496,10 @@ def _parse_cli():
         "--predictor-pkl",
         default=None,
         metavar="PATH",
-        help="Optional path to markov.pkl, most_common_predictor.pkl, or HMM pkls",
+        help=(
+            "Optional path: .pkl (markov, baselines, HMM) or directory "
+            "models/llm_predictor/ from train.py llm_predictor"
+        ),
     )
     return p.parse_args()
 

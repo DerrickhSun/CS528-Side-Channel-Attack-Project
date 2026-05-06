@@ -1,3 +1,8 @@
 pandas
 scikit-learn
 numpy
+# LLMPredictor (optional; only needed for ``llm_predictor``)
+torch
+transformers
+datasets
+accelerate>=1.1.0

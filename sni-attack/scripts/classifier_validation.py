@@ -28,6 +28,7 @@ for p in (ROOT, SCRIPTS):
         sys.path.insert(0, str(p))
 
 from models.first_order_markov import FirstOrderMarkov
+from models.llm_predictor import LLMPredictorFastCV
 from models.hidden_markov_predictor import HiddenMarkovPredictor
 from models.modified_hidden_markov_predictor import ModifiedHiddenMarkovPredictor
 from models.most_common_classifier import MostCommonClassifier
@@ -56,6 +57,7 @@ NEXT_SITE_MODELS: frozenset[str] = frozenset(
         "hidden_markov_predictor",
         "modified_hidden_markov_predictor",
         "most_common_predictor",
+        "llm_predictor",
     }
 )
 
@@ -404,6 +406,15 @@ def cv_modified_hidden_markov_predictor(
     )
 
 
+def cv_llm_predictor(
+    sessions_path: Path,
+    n_splits: int = 5,
+    random_state: int = 42,
+) -> dict[str, Any]:
+    """K-fold CV with a single training epoch per fold (slow vs Markov)."""
+    return _cv_next_site_model(sessions_path, n_splits, random_state, LLMPredictorFastCV)
+
+
 CV_RUNNERS: dict[str, Callable[[Path, int, int], dict[str, Any]]] = {
     "popular": cv_popular,
     "most_common_classifier": cv_most_common_classifier,
@@ -414,6 +425,7 @@ CV_RUNNERS: dict[str, Callable[[Path, int, int], dict[str, Any]]] = {
     "hidden_markov_predictor": cv_hidden_markov_predictor,
     "modified_hidden_markov_predictor": cv_modified_hidden_markov_predictor,
     "most_common_predictor": cv_most_common_predictor,
+    "llm_predictor": cv_llm_predictor,
 }
 
 CLASSIFIER_RESULTS_FIELDS = [

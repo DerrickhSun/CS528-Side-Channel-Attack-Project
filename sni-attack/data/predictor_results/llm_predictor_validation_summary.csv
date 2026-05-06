@@ -1,0 +1,7 @@
+n_splits,random_state,fold,correct_transitions,total_transitions_evaluated,skipped_unknown_from_state,top1_accuracy
+5,42,1,14,118,0,0.118644
+5,42,2,15,129,0,0.116279
+5,42,3,17,124,0,0.137097
+5,42,4,14,131,0,0.10687
+5,42,5,10,111,0,0.09009
+5,42,pooled,70,613,0,0.114192

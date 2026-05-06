@@ -18,6 +18,7 @@ for p in (ROOT, SCRIPTS):
         sys.path.insert(0, str(p))
 
 from models.first_order_markov import FirstOrderMarkov
+from models.llm_predictor import LLMPredictor
 from models.hidden_markov_predictor import HiddenMarkovPredictor
 from models.modified_hidden_markov_predictor import ModifiedHiddenMarkovPredictor
 from models.most_common_classifier import MostCommonClassifier
@@ -38,6 +39,7 @@ NEXT_SITE_MODELS: frozenset[str] = frozenset(
         "hidden_markov_predictor",
         "modified_hidden_markov_predictor",
         "most_common_predictor",
+        "llm_predictor",
     }
 )
 
@@ -205,6 +207,32 @@ def train_most_common_classifier() -> None:
         print(f"demo.csv:     {c2}/{n2} sessions correct ({acc2:.1%})")
 
 
+def train_llm_predictor() -> None:
+    """Fine-tuned DistilBERT next-SNI classifier → models/llm_predictor/"""
+    sessions_csv = DATA_DIR / "sessions.csv"
+    if not sessions_csv.is_file():
+        raise SystemExit(f"Missing {sessions_csv}; run generate.py first.")
+
+    rows = load_session_rows(sessions_csv)
+    m = LLMPredictor().fit(rows)
+    MODELS_DIR.mkdir(parents=True, exist_ok=True)
+    out_dir = MODELS_DIR / "llm_predictor"
+    m.save(out_dir)
+    print(f"Saved {out_dir}")
+
+    first_session = next(iter_sessions(rows))[1]
+    prefix = first_session[: min(3, len(first_session))]
+    dist = m.predict(prefix)
+    if dist:
+        top = ", ".join(f"{s} ({p:.2%})" for s, p in dist[:5])
+        print(
+            f"Example transformer next-site distribution: {top}"
+            f"{' ...' if len(dist) > 5 else ''}"
+        )
+    else:
+        print("No LLM predictor output for sample prefix (empty model?).")
+
+
 # Register each trainable model: name shown on CLI -> no-arg trainer
 TRAINERS: dict[str, Callable[[], None]] = {
     "first_order_markov": train_markov,
@@ -214,6 +242,7 @@ TRAINERS: dict[str, Callable[[], None]] = {
     "hidden_markov_predictor": train_hidden_markov_predictor,
     "modified_hidden_markov_predictor": train_modified_hidden_markov_predictor,
     "most_common_predictor": train_most_common_predictor,
+    "llm_predictor": train_llm_predictor,
 }
 
 
